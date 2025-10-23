@@ -1,0 +1,20 @@
+1.Zaaplikowanie zeby wartosci z enkoderów inkremetalnych zmieniały swoje zmienne volatile dzięki czemu bede miał na bierzaco wartość 
+danego kąta najlepiej jakby to było w postaci
+
+as5600_angle_value
+
+angle_value(){
+	...
+	as5600_angle_value
+	...
+} 
+zmienna_petli_ruchu = angle_value()
+
+tutaj jest to tak rozbite zeby nie bawić się w mutexy itd zeby wiele rzeczy nie miało dostępu do tej jednej zmienne.
+
+
+2.Zaaplikowanie timeoutów w komunikacji z masterme po SPI jak i równiez obsługę błedów 
+
+3.Zaaplikowanie funckji diagnostycznych ramienia danej osi 
+
+4.Zaaplikowanie funckji sluzacych do pozniejszej idetyfikacji wartosci parametrów regulatorów 
