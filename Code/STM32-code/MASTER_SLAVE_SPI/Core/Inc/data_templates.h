@@ -8,40 +8,67 @@
 #ifndef INC_DATA_TEMPLATES_H_
 #define INC_DATA_TEMPLATES_H_
 
+#define START_BYTE 0xAA
+#define END_BYTE 0xBB
+
+#define MAX_DATA_SIZE 20
+
+#define HOMMING_SIZE_OF_DATA  0
+#define MOVING_SIZE_OF_DATA  4
+#define STATUS_SIZE_OF_DATA  0
+#define STOP_SIZE_OF_DATA  0
+#define MOVEMENT_VALUES_SIZE_OF_DATA  8
+#define DIAGNOSTICS_SIZE_OF_DATA  0
+
+
 enum states{
 	IDLE_STATE,
 	HOMMING_STATE,
 	MOVING_STATE,
 	ERROR_STATE,
 	DIAGNOSTIC_STATE,
-	MANUAL_CONTROL_STATE,
+	MANUAL_CONTROL_STATE
 };
 
-struct message{
-	struct message_frame{
-		uint8_t start_byte;
-		uint8_t command;
-		uint8_t length;
-		uint8_t data[56];//this value is set by 60 is isze of buffer and we just decrese by 4 bajts
-		uint8_t end_byte;
-	};
 
-	struct confirmation_frame{
-		uint8_t start_byte;
-		uint8_t data[1];
-		uint8_t end_byte;
-	};
+enum commands{
+	START_HOMMING_COMMAND = 1,
+	START_MOVING_COMMAND ,
+	GET_STATUS_COMMAND ,
+	STOP_COMMAND ,
+	CHANGE_MOVEMENT_VALUES,
+	START_DIAGNOSTIC_COMMAND
+};
 
-	uint8_t acknowledge_confirmation;//if slave send back to master all data that command was received
+
+struct message_frame{
+	uint8_t start_byte;
+	uint8_t command;
+	uint8_t length;
+	uint8_t *data;//this value is set by 60 is isze of buffer and we just decrese by 4 bajts
+	uint8_t end_byte;
+};
+
+struct confirmation_frame{
+	uint8_t start_byte;
+	uint8_t data;
+	uint8_t end_byte;
+};
+
+struct message {
+    struct message_frame frame;          // pole typu message_frame
+    struct confirmation_frame confirm;   // pole typu confirmation_frame
+    uint8_t acknowledge_confirmation;
 };
 
 uint8_t new_message_available;//flag to indicate that new message is received
 
-struct diagnostic_summary{
-	uint8_t AS5600;
-	uint8_t incremental_enkoder;
-	uint8_t	motor;
-	uint8_t endstop;
+enum error_table{
+	NO_ERROR,
+	WRONG_START_BYTE,
+	NO_SUCH_COMMAND_VALUE,
+	WRONG_LENGTH_VALUE,
+	WRONG_END_BYTE
 };
 
 #endif /* INC_DATA_TEMPLATES_H_ */
