@@ -122,6 +122,7 @@ int main(void)
   while (1)
   {
 	  int penis = 0;
+	  int test = 0;
 
 
     /* USER CODE END WHILE */
