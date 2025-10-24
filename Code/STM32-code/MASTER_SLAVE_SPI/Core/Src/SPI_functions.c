@@ -13,17 +13,6 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi){
 
 }
 
-void new_function(){
-	//your code here
-}
-void mariusz() {
-
-}
-
-void wiktor() {
-
-}
-
 void proccess_received_command(struct message* SPI_message){
 	switch(SPI_message->message_frame.command){
 	}
