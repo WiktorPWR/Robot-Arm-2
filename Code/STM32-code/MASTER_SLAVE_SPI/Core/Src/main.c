@@ -74,6 +74,20 @@ static void MX_USART3_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
+	message.start_byte = spi_buffer[0];
+	message.command = spi_buffer[1];
+	message.length = spi_buffer[2];
+	if(message.length > sizeof(message.data)){
+		message.length = sizeof(message.data);//nie moze byc nic dluzej
+	}
+	memcpy(message.data,&spi_buffer[3],message.length);
+	message.end_byte = spi_buffer[3+message.length];
+}
+
+
+
 /* USER CODE END 0 */
 
 /**
@@ -121,9 +135,7 @@ int main(void)
 
   while (1)
   {
-	  int penis = 0;
-	  int test = 0;
-
+	  HAL_SPI_Receive_DMA(&hspi1, spi_buffer,BUFFER_SIZE);
 
     /* USER CODE END WHILE */
 
