@@ -20,6 +20,10 @@ void mariusz() {
 
 }
 
+void wiktor() {
+
+}
+
 void proccess_received_command(struct message* SPI_message){
 	switch(SPI_message->message_frame.command){
 	}
