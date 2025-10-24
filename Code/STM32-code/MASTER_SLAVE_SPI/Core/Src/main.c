@@ -135,7 +135,6 @@ int main(void)
 
   while (1)
   {
-	  HAL_SPI_Receive_DMA(&hspi1, spi_buffer,BUFFER_SIZE);
 
     /* USER CODE END WHILE */
 
