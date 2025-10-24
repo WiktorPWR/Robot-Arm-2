@@ -8,46 +8,39 @@
 #include "main.h"
 #include "SPI_functions.h"
 
-void proccess_received_command(struct message* SPI_message){
-	switch(SPI_message->message_frame.command){
-		case IDLE_STATE:
-			//handle idle state command
-			break;
-		case HOMMING_STATE:
-			//handle homming state command
-			break;
-		case MOVING_STATE:
-			//handle moving state command
-			 break;
-		case ERROR_STATE:
-			//handle error state command
-			break;
-		case DIAGNOSTIC_STATE:
-			//handle diagnostic state command
-			break;
-		case MANUAL_CONTROL_STATE:
-			//handle manual control state command
-			break;
-	}
-}
 
-uint8_t chec_message_frame(struct message* SPI_message){
-	//Checl if start byte i correct
+//0xB00B5EE5
+
+/**
+ * @brief Copies and validates a normal data frame from the SPI receive buffer.
+ *
+ * This function reads bytes directly from the SPI RX buffer and populates the
+ * provided @ref message structure. It validates the frame structure (start byte,
+ * command, data length, end byte) and copies payload data to the frame buffer.
+ *
+ * @param[in]  hspi1       Pointer to the active SPI handle structure.
+ * @param[out] SPI_message Pointer to the message structure to be filled with received data.
+ *
+ * @return Status code indicating result:
+ *         - @ref NO_ERROR                on success
+ *         - @ref WRONG_START_BYTE        if the start byte is invalid
+ *         - @ref WRONG_LENGTH_VALUE      if message length does not match expected
+ *         - @ref NO_SUCH_COMMAND_VALUE   if the command code is unknown
+ *         - @ref WRONG_END_BYTE          if the end byte is invalid
+ */
+uint8_t copying_from_buffer_normal_frame(SPI_HandleTypeDef *hspi1,volatile struct message* SPI_message){
+	uint8_t *rx_buf = hspi1->pRxBuffPtr;
+
+	//Copy start byte, command, length from rx buffer to message frame
+	SPI_message->frame.start_byte = rx_buf[0];
 	if(SPI_message->frame.start_byte != START_BYTE){
-		return WRONG_START_BYTE;
-	}
-	//Check if command value is correct
-	switch(SPI_message->frame.command){
-		case START_HOMMING_COMMAND:
-		case START_MOVING_COMMAND:
-		case STOP_COMMAND:
-		case START_DIAGNOSTIC_COMMAND:
-		case GET_STATUS_COMMAND:
-			break;
-		default:
-			return NO_SUCH_COMMAND_VALUE;
+			return WRONG_START_BYTE;
 	}
 
+
+	//Copy command and length
+	SPI_message->frame.command = rx_buf[1];
+	SPI_message->frame.length = rx_buf[2];
 	//Check lenght of message, length is size in bytes
 	switch(SPI_message->frame.command){
 		case START_HOMMING_COMMAND:
@@ -80,23 +73,144 @@ uint8_t chec_message_frame(struct message* SPI_message){
 				return WRONG_LENGTH_VALUE;
 			}
 			break;
+		default:
+			return NO_SUCH_COMMAND_VALUE;
 	}
 
-	//Check end byte
+	//Copy data from rx buffer to message frame
+	memcpy((void*)SPI_message->frame.data, &hspi1->pRxBuffPtr[3], SPI_message->frame.length);
+	SPI_message->frame.end_byte = hspi1->pRxBuffPtr[3 + SPI_message->frame.length];
+
 	if(SPI_message->frame.end_byte != END_BYTE){
-		return WRONG_END_BYTE;
+			return WRONG_END_BYTE;
 	}
 
-	//If all checks are passed return no error
 	return NO_ERROR;
 }
 
 
+/**
+ * @brief Copies and validates a confirmation frame from the SPI receive buffer.
+ *
+ * This function parses a short confirmation frame (start, data, end bytes)
+ * and updates the @ref message structure with acknowledgment information.
+ *
+ * @param[in]  hspi1       Pointer to the SPI handle structure.
+ * @param[out] SPI_message Pointer to the message structure that stores confirmation info.
+ *
+ * @return Status code indicating result:
+ *         - @ref NO_ERROR                on success
+ *         - @ref WRONG_CONFIRMATION_FRAME if frame structure is invalid
+ */
+uint8_t copying_from_buffer_confirmation_frame(SPI_HandleTypeDef *hspi1,volatile struct message* SPI_message){
+	uint8_t *rx_buf = hspi1->pRxBuffPtr;
+	SPI_message->confirm.start_byte = rx_buf[0];
+	SPI_message->confirm.data       = rx_buf[1];
+	SPI_message->confirm.end_byte   = rx_buf[2];
+
+	if(SPI_message->confirm.start_byte != START_BYTE ||
+	   SPI_message->confirm.end_byte   != END_BYTE){
+		//handle error
+		return WRONG_CONFIRMATION_FRAME;
+	}
+
+	if(SPI_message->confirm.data == ACKNOWLEDGMENT_OK){
+		SPI_message->acknowledge_confirmation = 1;
+	} else {
+		SPI_message->acknowledge_confirmation = 0;
+	}
+
+	return NO_ERROR;
+}
+
+/**
+ * @brief Clears all data within a SPI message structure.
+ *
+ * This function resets all fields within a @ref message structure to zero,
+ * including command metadata and data buffer content.
+ *
+ * @param[in,out] SPI_message Pointer to the message structure to clear.
+ */
+void clear_spi_message(volatile struct message* SPI_message){
+	SPI_message->frame.start_byte = 0;
+	SPI_message->frame.command    = 0;
+	SPI_message->frame.length     = 0;
+	SPI_message->frame.end_byte   = 0;
+	//Free allocated memory for data field
+	memset((void*)SPI_message->frame.data,0,MAX_DATA_SIZE);
+}
+
+
+/**
+ * @brief Processes a fully received SPI command message.
+ *
+ * Based on the received command code, this function calls appropriate handlers
+ * to perform actions such as homing, motion control, or diagnostic routines.
+ *
+ * @param[in,out] SPI_message Pointer to the received message to process.
+ */
+void process_received_command(struct message* SPI_message){
+	switch(SPI_message->frame.command){
+		case START_HOMMING_COMMAND:
+			//Call homming function
+			break;
+		case START_MOVING_COMMAND:
+			//Call moving function with parameters from data field
+			break;
+		case STOP_COMMAND:
+			//Call stop function
+			break;
+		case GET_STATUS_COMMAND:
+			//Call get status function
+			break;
+		case CHANGE_MOVEMENT_VALUES:
+			//Call change movement values function with parameters from data field
+			break;
+		case START_DIAGNOSTIC_COMMAND:
+			//Call start diagnostic function
+			break;
+		default:
+			//Handle unknown command error
+			break;
+	}
+
+	//After processing clear the SPI message
+	clear_spi_message(SPI_message);
+}
+
+
+
 //interupt called when SPI transmission is complete
+// value sending confirmation will be handled in main loop
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi){
-	struct message SPI_message;
+	if(SLAVE_DEAD){
+		//if slave is marked as dead, ignore incoming messages
+		return;
+	}
+	switch(SPI_state){
+		case MESSAGE_RECEIVED:
+			if(copying_from_buffer_normal_frame(hspi,&SPI_message) != NO_ERROR){
+					//handle error
+					SLAVE_DEAD = 1;
+					clear_spi_frame = 1;
+					break;
+			}
+            //Process received command
+			SPI_state = SENDING_CONFIRMATION;
+			break;
 
+		case CONFIRMATION_RECEIVED:
+			if(copying_from_buffer_confirmation_frame(hspi,&SPI_message) == NO_ERROR){
+				//handle acknowledgment
+			}
+			else{
+				//handle error
+				clear_spi_frame = 1;
+				SLAVE_DEAD = 1;
+			}
 
-	//proccess_received_command(&SPI_message);
+			break;
+
+	}
 }
 
