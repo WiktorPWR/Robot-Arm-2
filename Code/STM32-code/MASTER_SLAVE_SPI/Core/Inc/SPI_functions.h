@@ -14,12 +14,4 @@
 
 uint8_t spi_buffer[BUFFER_SIZE] = {0};
 
-volatile struct message_frame message;
-
-enum slave_state state = READY;
-
-volatile uint8_t new_command = 0;//0 no new command
-
-
-
 #endif /* INC_SPI_FUNCTIONS_H_ */
