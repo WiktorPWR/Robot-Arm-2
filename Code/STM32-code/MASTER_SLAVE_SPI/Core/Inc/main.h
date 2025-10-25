@@ -31,10 +31,11 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <data_templates.h>
 #include "motor_functions.h"
 #include <string.h>
 #include <stdlib.h>
+#include "SPI_functions.h"
+#include "data_templates.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

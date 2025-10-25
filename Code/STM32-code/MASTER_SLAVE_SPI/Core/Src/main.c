@@ -74,20 +74,6 @@ static void MX_USART3_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
-	message.start_byte = spi_buffer[0];
-	message.command = spi_buffer[1];
-	message.length = spi_buffer[2];
-	if(message.length > sizeof(message.data)){
-		message.length = sizeof(message.data);//nie moze byc nic dluzej
-	}
-	memcpy(message.data,&spi_buffer[3],message.length);
-	message.end_byte = spi_buffer[3+message.length];
-}
-
-
-
 /* USER CODE END 0 */
 
 /**
@@ -127,6 +113,7 @@ int main(void)
   MX_TIM4_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer,BUFFER_FRAME_SIZE);
 
   /* USER CODE END 2 */
 
@@ -135,8 +122,48 @@ int main(void)
 
   while (1)
   {
-	  HAL_SPI_Receive_DMA(&hspi1, spi_buffer,BUFFER_SIZE);
+	  switch(SPI_state){
+	  	  case SENDING_CONFIRMATION:
+	  		  copying_to_buffer_confirmation_frame(&SPI_message);
+	  		  HAL_SPI_Transmit(&hspi1, spi_send_confirmation_buffer, BUFFER_SEND_CONFIRMATION_SIZE, 100);
+	  		  SPI_state = CONFIRMATION_RECEIVED;
+	  		  break;
+	  	  case CONFIRMATION_RECEIVED:
+	  		  if(SPI_message.acknowledge_confirmation){
+	  			  process_received_command(&SPI_message);
 
+	  			  //Reset acknowledgment flag
+	  			  SPI_message.acknowledge_confirmation = 0;
+	  			  //Acknowledgment received, proceed as normal
+	  		  } else {
+	  			  //Handle negative acknowledgment
+	  		  }
+	  		  break;
+
+	  }
+	  switch(SLAVE_STATE){
+	  	  case IDLE_STATE:
+	  		  //Idle state, do nothing
+	  		  break;
+	  	  case HOMMING_STATE:
+	  		  //Call homming function
+	  		  break;
+		  case MOVING_STATE:
+			  //Call moving function
+			  break;
+		  case STOP_STATE:
+			  //Call stop function
+			  break;
+		  case SENDING_STATE:
+			  //Call get status function
+			  break;
+	      case CHAGING_MOVEMENT_VALUES_STATE:
+			  //Call change movement values function
+	    	  break;
+	      case DIAGNOSTIC_STATE:
+	    	  //Call start diagnostic function
+	    	  break;
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

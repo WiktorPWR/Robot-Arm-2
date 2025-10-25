@@ -25,6 +25,7 @@
 #define MAX_DATA_SIZE 20
 
 
+
 /* ==========================================================
  *  COMMAND DATA LENGTHS
  * ========================================================== */
@@ -44,21 +45,10 @@
  *  GLOBAL VARIABLES
  * ========================================================== */
 
-/**
- * @brief Flag set when the SPI slave is not responding.
- */
-volatile uint8_t SLAVE_DEAD = 0;
 
-/**
- * @brief General-purpose buffer for received data.
- */
-uint8_t data_buffer[MAX_DATA_SIZE];
-
-/**
- * @brief Flag indicating that the current SPI frame should be cleared.
- */
-volatile uint8_t clear_spi_frame = 0;
-
+#define BUFFER_FRAME_SIZE 24
+#define BUFFER_RECEIVE_CONFIRMATION_SIZE 4
+#define BUFFER_SEND_CONFIRMATION_SIZE 22
 
 /* ==========================================================
  *  ENUMERATIONS
@@ -67,13 +57,16 @@ volatile uint8_t clear_spi_frame = 0;
 /**
  * @brief System operation states.
  */
-enum states {
+enum slave_state {
 	IDLE_STATE,
 	HOMMING_STATE,
 	MOVING_STATE,
 	ERROR_STATE,
+	STOP_STATE,
 	DIAGNOSTIC_STATE,
-	MANUAL_CONTROL_STATE
+	MANUAL_CONTROL_STATE,
+	SENDING_STATE,
+	CHAGING_MOVEMENT_VALUES_STATE,
 };
 
 /**
@@ -137,11 +130,19 @@ struct message_frame {
 /**
  * @brief Confirmation frame for acknowledging message reception.
  */
-struct confirmation_frame {
+struct confirmation_receive_frame {
 	uint8_t start_byte;                  /*!< Start byte (usually START_BYTE) */
 	uint8_t data;                        /*!< Acknowledgment value (OK/ERROR) */
 	uint8_t end_byte;                    /*!< End byte (usually END_BYTE) */
 };
+
+
+struct confirmation_sending_frame {
+	uint8_t start_byte;                  /*!< Start byte (usually START_BYTE) */
+	uint8_t data[MAX_DATA_SIZE];                        /*!< Acknowledgment value (OK/ERROR) */
+	uint8_t end_byte;                    /*!< End byte (usually END_BYTE) */
+};
+
 
 /**
  * @brief Full SPI message container.
@@ -149,24 +150,13 @@ struct confirmation_frame {
 struct message {
 	uint8_t acknowledge_confirmation;    /*!< Set to 1 if acknowledgment received */
 	struct message_frame frame;          /*!< Main data frame */
-	struct confirmation_frame confirm;   /*!< Confirmation frame */
+	struct confirmation_receive_frame receive_confirm; /*!< Confirmation frame received */
+	struct confirmation_sending_frame send_confirm; /*!< Confirmation frame to send */
 };
 
 
 /* ==========================================================
  *  GLOBAL MESSAGE INSTANCE
  * ========================================================== */
-
-/**
- * @brief Global SPI message structure used for communication handling.
- * @note Declared volatile because it may be modified in interrupt context.
- */
-volatile struct message SPI_message;
-
-/**
- * @brief Current state of SPI communication.
- * @note Declared volatile because it may be modified in interrupt context.
- */
-volatile enum communication_states SPI_state;
 
 #endif /* INC_DATA_TEMPLATES_H_ */

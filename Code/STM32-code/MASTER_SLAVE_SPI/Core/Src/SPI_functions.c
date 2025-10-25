@@ -7,9 +7,21 @@
 
 #include "main.h"
 #include "SPI_functions.h"
-
+#include "data_templates.h"
 
 //0xB00B5EE5
+
+
+uint8_t data_buffer[MAX_DATA_SIZE];
+volatile uint8_t clear_spi_frame;
+
+uint8_t spi_frame_buffer[BUFFER_FRAME_SIZE];
+uint8_t spi_receive_confirmation_buffer[BUFFER_RECEIVE_CONFIRMATION_SIZE];
+uint8_t spi_send_confirmation_buffer[BUFFER_SEND_CONFIRMATION_SIZE];
+
+volatile struct message SPI_message = {0};
+volatile enum communication_states SPI_state = MESSAGE_RECEIVED;
+volatile enum slave_state SLAVE_STATE = IDLE_STATE;
 
 /**
  * @brief Copies and validates a normal data frame from the SPI receive buffer.
@@ -28,8 +40,8 @@
  *         - @ref NO_SUCH_COMMAND_VALUE   if the command code is unknown
  *         - @ref WRONG_END_BYTE          if the end byte is invalid
  */
-uint8_t copying_from_buffer_normal_frame(SPI_HandleTypeDef *hspi1,volatile struct message* SPI_message){
-	uint8_t *rx_buf = hspi1->pRxBuffPtr;
+uint8_t copying_from_buffer_normal_frame(struct message* SPI_message){
+	volatile uint8_t *rx_buf = spi_frame_buffer;
 
 	//Copy start byte, command, length from rx buffer to message frame
 	SPI_message->frame.start_byte = rx_buf[0];
@@ -78,12 +90,19 @@ uint8_t copying_from_buffer_normal_frame(SPI_HandleTypeDef *hspi1,volatile struc
 	}
 
 	//Copy data from rx buffer to message frame
-	memcpy((void*)SPI_message->frame.data, &hspi1->pRxBuffPtr[3], SPI_message->frame.length);
-	SPI_message->frame.end_byte = hspi1->pRxBuffPtr[3 + SPI_message->frame.length];
+	memcpy((void*)SPI_message->frame.data, &spi_frame_buffer[3], SPI_message->frame.length);
+	SPI_message->frame.end_byte = spi_frame_buffer[3 + SPI_message->frame.length];
 
 	if(SPI_message->frame.end_byte != END_BYTE){
 			return WRONG_END_BYTE;
 	}
+
+
+	//Prepare confirmation frame to be sent back
+	SPI_message->send_confirm.start_byte = START_BYTE;
+	memcpy((void*)SPI_message->send_confirm.data, (void*)SPI_message->frame.data, SPI_message->frame.length);
+	SPI_message->send_confirm.end_byte   = END_BYTE;
+
 
 	return NO_ERROR;
 }
@@ -102,24 +121,33 @@ uint8_t copying_from_buffer_normal_frame(SPI_HandleTypeDef *hspi1,volatile struc
  *         - @ref NO_ERROR                on success
  *         - @ref WRONG_CONFIRMATION_FRAME if frame structure is invalid
  */
-uint8_t copying_from_buffer_confirmation_frame(SPI_HandleTypeDef *hspi1,volatile struct message* SPI_message){
-	uint8_t *rx_buf = hspi1->pRxBuffPtr;
-	SPI_message->confirm.start_byte = rx_buf[0];
-	SPI_message->confirm.data       = rx_buf[1];
-	SPI_message->confirm.end_byte   = rx_buf[2];
+uint8_t copying_from_buffer_confirmation_frame(struct message* SPI_message){
+	uint8_t *rx_buf = spi_receive_confirmation_buffer;
+	SPI_message->receive_confirm.start_byte = rx_buf[0];
+	SPI_message->receive_confirm.data       = rx_buf[1];
+	SPI_message->receive_confirm.end_byte   = rx_buf[2];
 
-	if(SPI_message->confirm.start_byte != START_BYTE ||
-	   SPI_message->confirm.end_byte   != END_BYTE){
+	if(SPI_message->receive_confirm.start_byte != START_BYTE ||
+	   SPI_message->receive_confirm.end_byte   != END_BYTE){
 		//handle error
 		return WRONG_CONFIRMATION_FRAME;
 	}
 
-	if(SPI_message->confirm.data == ACKNOWLEDGMENT_OK){
+	if(SPI_message->receive_confirm.data == ACKNOWLEDGMENT_OK){
 		SPI_message->acknowledge_confirmation = 1;
 	} else {
 		SPI_message->acknowledge_confirmation = 0;
 	}
 
+	return NO_ERROR;
+}
+
+
+uint8_t copying_to_buffer_confirmation_frame(struct message* SPI_message){
+	uint8_t *tx_buf = spi_send_confirmation_buffer;
+	tx_buf[0] = SPI_message->send_confirm.start_byte;
+	memcpy(&tx_buf[1], (void*)SPI_message->send_confirm.data, MAX_DATA_SIZE);
+	tx_buf[1 + MAX_DATA_SIZE] = SPI_message->send_confirm.end_byte;
 	return NO_ERROR;
 }
 
@@ -131,13 +159,25 @@ uint8_t copying_from_buffer_confirmation_frame(SPI_HandleTypeDef *hspi1,volatile
  *
  * @param[in,out] SPI_message Pointer to the message structure to clear.
  */
-void clear_spi_message(volatile struct message* SPI_message){
+void clear_spi_message(struct message* SPI_message){
 	SPI_message->frame.start_byte = 0;
 	SPI_message->frame.command    = 0;
 	SPI_message->frame.length     = 0;
 	SPI_message->frame.end_byte   = 0;
 	//Free allocated memory for data field
-	memset((void*)SPI_message->frame.data,0,MAX_DATA_SIZE);
+	memset(SPI_message->frame.data,0,MAX_DATA_SIZE);
+
+	//Clear receiving confirmation frame
+	SPI_message->receive_confirm.start_byte = 0;
+ 	SPI_message->receive_confirm.data       = 0;
+	SPI_message->receive_confirm.end_byte   = 0;
+
+	//Clear sending confirmation frame
+	SPI_message->send_confirm.start_byte = 0;
+	memset(SPI_message->send_confirm.data,0,MAX_DATA_SIZE);
+	SPI_message->send_confirm.end_byte   = 0;
+
+
 }
 
 
@@ -152,30 +192,36 @@ void clear_spi_message(volatile struct message* SPI_message){
 void process_received_command(struct message* SPI_message){
 	switch(SPI_message->frame.command){
 		case START_HOMMING_COMMAND:
+			SLAVE_STATE = HOMMING_STATE;
 			//Call homming function
 			break;
 		case START_MOVING_COMMAND:
+			SLAVE_STATE = MOVING_STATE;
 			//Call moving function with parameters from data field
 			break;
 		case STOP_COMMAND:
+			SLAVE_STATE = STOP_STATE;
 			//Call stop function
 			break;
 		case GET_STATUS_COMMAND:
+			SLAVE_STATE = SENDING_STATE;
 			//Call get status function
 			break;
 		case CHANGE_MOVEMENT_VALUES:
+			SLAVE_STATE = CHAGING_MOVEMENT_VALUES_STATE;
 			//Call change movement values function with parameters from data field
 			break;
 		case START_DIAGNOSTIC_COMMAND:
+			SLAVE_STATE = DIAGNOSTIC_STATE;
 			//Call start diagnostic function
 			break;
 		default:
+			SLAVE_STATE = IDLE_STATE;
 			//Handle unknown command error
 			break;
 	}
 
-	//After processing clear the SPI message
-	clear_spi_message(SPI_message);
+
 }
 
 
@@ -183,15 +229,11 @@ void process_received_command(struct message* SPI_message){
 //interupt called when SPI transmission is complete
 // value sending confirmation will be handled in main loop
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi){
-	if(SLAVE_DEAD){
-		//if slave is marked as dead, ignore incoming messages
-		return;
-	}
 	switch(SPI_state){
 		case MESSAGE_RECEIVED:
-			if(copying_from_buffer_normal_frame(hspi,&SPI_message) != NO_ERROR){
+			if(copying_from_buffer_normal_frame(&SPI_message) != NO_ERROR){
 					//handle error
-					SLAVE_DEAD = 1;
+					SLAVE_STATE = SLAVE_DEAD;
 					clear_spi_frame = 1;
 					break;
 			}
@@ -200,17 +242,11 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi){
 			break;
 
 		case CONFIRMATION_RECEIVED:
-			if(copying_from_buffer_confirmation_frame(hspi,&SPI_message) == NO_ERROR){
-				//handle acknowledgment
-			}
-			else{
-				//handle error
-				clear_spi_frame = 1;
-				SLAVE_DEAD = 1;
-			}
-
+			copying_from_buffer_confirmation_frame(&SPI_message)
+			HAL_SPI_Receive_DMA(hspi,spi_frame_buffer,BUFFER_FRAME_SIZE);
 			break;
 
 	}
+
 }
 
