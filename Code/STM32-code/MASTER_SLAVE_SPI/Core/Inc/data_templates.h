@@ -39,13 +39,15 @@
 #define STOP_SIZE_OF_DATA             0
 #define MOVEMENT_VALUES_SIZE_OF_DATA  8
 #define DIAGNOSTICS_SIZE_OF_DATA      0
-
+#define ACCEPT_CONFIRMATION_SIZE_OF_DATA 0
 
 /* ==========================================================
  *  GLOBAL VARIABLES
  * ========================================================== */
 
-
+/**
+ * @brief Buffer sizes for SPI communication.
+ */
 #define BUFFER_FRAME_SIZE 24
 #define BUFFER_RECEIVE_CONFIRMATION_SIZE 4
 #define BUFFER_SEND_CONFIRMATION_SIZE 22
@@ -95,7 +97,8 @@ enum commands {
 	GET_STATUS_COMMAND,
 	STOP_COMMAND,
 	CHANGE_MOVEMENT_VALUES,
-	START_DIAGNOSTIC_COMMAND
+	START_DIAGNOSTIC_COMMAND,
+	ACCEPT_CONFIRMATION_COMMAND
 };
 
 /**
@@ -108,7 +111,9 @@ enum error_table {
 	WRONG_LENGTH_VALUE,
 	WRONG_END_BYTE,
 	ALLOCATION_ERROR,
-	WRONG_CONFIRMATION_FRAME
+	WRONG_START_BYTE_CONFIRMATION,
+	WRONG_END_BYTE_CONFIRMATION,
+	BEFOR_USING_ANY_NEW_COMMAND_RESET_SLAVE
 };
 
 
@@ -137,13 +142,6 @@ struct confirmation_receive_frame {
 };
 
 
-struct confirmation_sending_frame {
-	uint8_t start_byte;                  /*!< Start byte (usually START_BYTE) */
-	uint8_t data[MAX_DATA_SIZE];                        /*!< Acknowledgment value (OK/ERROR) */
-	uint8_t end_byte;                    /*!< End byte (usually END_BYTE) */
-};
-
-
 /**
  * @brief Full SPI message container.
  */
@@ -151,7 +149,7 @@ struct message {
 	uint8_t acknowledge_confirmation;    /*!< Set to 1 if acknowledgment received */
 	struct message_frame frame;          /*!< Main data frame */
 	struct confirmation_receive_frame receive_confirm; /*!< Confirmation frame received */
-	struct confirmation_sending_frame send_confirm; /*!< Confirmation frame to send */
+	struct message_frame send_confirm; /*!< Confirmation frame to send */
 };
 
 

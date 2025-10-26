@@ -85,6 +85,11 @@ uint8_t copying_from_buffer_normal_frame(struct message* SPI_message){
 				return WRONG_LENGTH_VALUE;
 			}
 			break;
+		case ACCEPT_CONFIRMATION_COMMAND:
+			if(SPI_message->frame.length != ACCEPT_CONFIRMATION_SIZE_OF_DATA){
+				return WRONG_LENGTH_VALUE;
+			}
+			break;
 		default:
 			return NO_SUCH_COMMAND_VALUE;
 	}
@@ -97,16 +102,44 @@ uint8_t copying_from_buffer_normal_frame(struct message* SPI_message){
 			return WRONG_END_BYTE;
 	}
 
-
-	//Prepare confirmation frame to be sent back
-	SPI_message->send_confirm.start_byte = START_BYTE;
-	memcpy((void*)SPI_message->send_confirm.data, (void*)SPI_message->frame.data, SPI_message->frame.length);
-	SPI_message->send_confirm.end_byte   = END_BYTE;
-
-
 	return NO_ERROR;
 }
 
+
+
+/**
+ * @brief Prepares a response confirmation frame for the SPI master.
+ *
+ * This function populates the confirmation frame within the provided
+ * @ref message structure based on the specified error code. If no error
+ * is indicated, it copies the received data back into the confirmation frame.
+ *
+ * @param[in,out] SPI_message Pointer to the message structure to fill.
+ * @param[in]     ERROR_CODE  Error code indicating success or type of failure.
+ */
+void preparing_response_for_master(struct message* SPI_message,uint8_t ERROR_CODE){
+	SPI_message->send_confirm.start_byte = START_BYTE;
+
+	if(ERROR_CODE == NO_ERROR){
+		if(SPI_message->frame.command != ACCEPT_CONFIRMATION_COMMAND && (GPIOB->ODR & GPIO_PIN_5)){
+				//Before any new command we need to reset slave
+				SPI_message->send_confirm.command = BEFOR_USING_ANY_NEW_COMMAND_RESET_SLAVE;
+		}else{
+			SPI_message->send_confirm.command = NO_ERROR;
+		}
+		SPI_message->send_confirm.length  = SPI_message->frame.length;
+		memcpy(SPI_message->send_confirm.data, SPI_message->frame.data, SPI_message->send_confirm.length);
+	}else{
+		//we have a problem
+		SPI_message->send_confirm.command = ERROR_CODE;
+		SPI_message->send_confirm.length  = 0;
+		memset(SPI_message->send_confirm.data,0,MAX_DATA_SIZE);
+	}
+
+
+	SPI_message->send_confirm.end_byte = END_BYTE;
+
+}
 
 /**
  * @brief Copies and validates a confirmation frame from the SPI receive buffer.
@@ -127,10 +160,13 @@ uint8_t copying_from_buffer_confirmation_frame(struct message* SPI_message){
 	SPI_message->receive_confirm.data       = rx_buf[1];
 	SPI_message->receive_confirm.end_byte   = rx_buf[2];
 
-	if(SPI_message->receive_confirm.start_byte != START_BYTE ||
-	   SPI_message->receive_confirm.end_byte   != END_BYTE){
-		//handle error
-		return WRONG_CONFIRMATION_FRAME;
+
+	if(SPI_message->receive_confirm.start_byte != START_BYTE){
+		return WRONG_START_BYTE_CONFIRMATION;
+	}
+
+	if(SPI_message->receive_confirm.end_byte != END_BYTE){
+		return WRONG_END_BYTE_CONFIRMATION;
 	}
 
 	if(SPI_message->receive_confirm.data == ACKNOWLEDGMENT_OK){
@@ -143,6 +179,19 @@ uint8_t copying_from_buffer_confirmation_frame(struct message* SPI_message){
 }
 
 
+
+/**
+ * @brief Copies a confirmation frame into the SPI transmit buffer.
+ *
+ * This function prepares the transmit buffer with the confirmation frame
+ * data from the provided @ref message structure for sending back to the master.
+ *
+ * @param[in]  hspi1       Pointer to the SPI handle structure.
+ * @param[out] SPI_message Pointer to the message structure containing confirmation data.
+ *
+ * @return Status code indicating result:
+ *         - @ref NO_ERROR on success
+ */
 uint8_t copying_to_buffer_confirmation_frame(struct message* SPI_message){
 	uint8_t *tx_buf = spi_send_confirmation_buffer;
 	tx_buf[0] = SPI_message->send_confirm.start_byte;
@@ -177,6 +226,9 @@ void clear_spi_message(struct message* SPI_message){
 	memset(SPI_message->send_confirm.data,0,MAX_DATA_SIZE);
 	SPI_message->send_confirm.end_byte   = 0;
 
+	memset(spi_frame_buffer,0,MAX_DATA_SIZE);
+	memset(spi_receive_confirmation_buffer,0,BUFFER_RECEIVE_CONFIRMATION_SIZE);
+	memset(spi_send_confirmation_buffer,0,BUFFER_SEND_CONFIRMATION_SIZE);
 
 }
 
@@ -190,6 +242,7 @@ void clear_spi_message(struct message* SPI_message){
  * @param[in,out] SPI_message Pointer to the received message to process.
  */
 void process_received_command(struct message* SPI_message){
+
 	switch(SPI_message->frame.command){
 		case START_HOMMING_COMMAND:
 			SLAVE_STATE = HOMMING_STATE;
@@ -215,6 +268,9 @@ void process_received_command(struct message* SPI_message){
 			SLAVE_STATE = DIAGNOSTIC_STATE;
 			//Call start diagnostic function
 			break;
+		case ACCEPT_CONFIRMATION_COMMAND:
+			SLAVE_STATE = IDLE_STATE;
+			HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
 		default:
 			SLAVE_STATE = IDLE_STATE;
 			//Handle unknown command error
@@ -231,18 +287,14 @@ void process_received_command(struct message* SPI_message){
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi){
 	switch(SPI_state){
 		case MESSAGE_RECEIVED:
-			if(copying_from_buffer_normal_frame(&SPI_message) != NO_ERROR){
-					//handle error
-					SLAVE_STATE = SLAVE_DEAD;
-					clear_spi_frame = 1;
-					break;
-			}
-            //Process received command
+			uint8_t error_code = copying_from_buffer_normal_frame(&SPI_message);
+			preparing_response_for_master(&SPI_message,error_code);
+
 			SPI_state = SENDING_CONFIRMATION;
 			break;
 
 		case CONFIRMATION_RECEIVED:
-			copying_from_buffer_confirmation_frame(&SPI_message)
+			copying_from_buffer_confirmation_frame(&SPI_message);
 			HAL_SPI_Receive_DMA(hspi,spi_frame_buffer,BUFFER_FRAME_SIZE);
 			break;
 

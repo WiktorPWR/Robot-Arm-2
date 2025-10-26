@@ -69,6 +69,35 @@ static void MX_TIM4_Init(void);
 static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
+void handle_slave_state(uint8_t state) {
+    switch(state) {
+		case HOMMING_STATE:
+			HAL_Delay(1000);
+			//perform_homing();
+			break;
+		case MOVING_STATE:
+			HAL_Delay(3000);
+			//perform_movement();
+			break;
+		case STOP_STATE:
+			//perform_stop();
+			break;
+		case SENDING_STATE:
+			//send_status();
+			break;
+		case CHAGING_MOVEMENT_VALUES_STATE:
+			//change_movement_values();
+			break;
+		case DIAGNOSTIC_STATE:
+			//perform_diagnostics();
+			break;
+		default:
+			// Handle unknown state if necessary
+			break;
+	}
+}
+
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -126,6 +155,7 @@ int main(void)
 	  	  case SENDING_CONFIRMATION:
 	  		  copying_to_buffer_confirmation_frame(&SPI_message);
 	  		  HAL_SPI_Transmit(&hspi1, spi_send_confirmation_buffer, BUFFER_SEND_CONFIRMATION_SIZE, 100);
+	  		  HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
 	  		  SPI_state = CONFIRMATION_RECEIVED;
 	  		  break;
 	  	  case CONFIRMATION_RECEIVED:
@@ -141,29 +171,21 @@ int main(void)
 	  		  break;
 
 	  }
-	  switch(SLAVE_STATE){
-	  	  case IDLE_STATE:
-	  		  //Idle state, do nothing
-	  		  break;
-	  	  case HOMMING_STATE:
-	  		  //Call homming function
-	  		  break;
-		  case MOVING_STATE:
-			  //Call moving function
-			  break;
-		  case STOP_STATE:
-			  //Call stop function
-			  break;
-		  case SENDING_STATE:
-			  //Call get status function
-			  break;
+	  switch(SLAVE_STATE) {
+	      case IDLE_STATE:
+	          break;
+	      case HOMMING_STATE:
+	      case MOVING_STATE:
+	      case STOP_STATE:
+	      case SENDING_STATE:
 	      case CHAGING_MOVEMENT_VALUES_STATE:
-			  //Call change movement values function
-	    	  break;
 	      case DIAGNOSTIC_STATE:
-	    	  //Call start diagnostic function
-	    	  break;
+	          HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_SET);
+	          // Wywołanie odpowiedniej funkcji:
+	          handle_slave_state(SLAVE_STATE);
+	          break;
 	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -229,7 +251,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_INPUT;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -489,6 +511,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, DIR_Pin|PULL_MANUAL_Pin|ENABLE_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : ENDSTOP_Pin */
   GPIO_InitStruct.Pin = ENDSTOP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
@@ -501,6 +526,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : SLAVE_END_TASK_Pin */
+  GPIO_InitStruct.Pin = SLAVE_END_TASK_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(SLAVE_END_TASK_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
