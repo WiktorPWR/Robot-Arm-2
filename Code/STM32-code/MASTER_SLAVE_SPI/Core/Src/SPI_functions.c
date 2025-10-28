@@ -373,9 +373,10 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
             break;
         }
 
-        case (CONFIRMATION_RECEIVED):
+        case CONFIRMATION_RECEIVED:
 		{
 			SPI_state = PROCES_CONFRMATION;
+			break;
 		}
         // ===================== DEFAULT =====================
         default:
@@ -384,6 +385,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
             HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
             break;
         }
+
     }
 }
 

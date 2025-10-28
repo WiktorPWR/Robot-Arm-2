@@ -10,12 +10,35 @@
 
 extern TIM_HandleTypeDef htim4;
 
+enum MotorState{
+	MOTOR_DISABLED,
+	MOTOR_ENABLED,
+	MOTOR_STOPPED,
+	MOTOR_RUNNING
+};
+
+enum MotorDirection{
+	MOTOR_DIR_LEFT,
+	MOTOR_DIR_RIGHT
+};
+
+enum PWMState{
+	PWM_DISABLED,
+	PWM_ENABLED
+};
+
+
+enum MotorState motor_state = MOTOR_DISABLED;
+enum MotorDirection motor_direction = MOTOR_DIR_RIGHT;
+enum PWMState pwm_state = PWM_DISABLED;
+
+
 const uint16_t ARR_VALUE = 65535;
 const uint32_t CLOCK_VALUE = 8000000;// 8 000 000
 const uint8_t  MICROSTEPPING = 16;
 const float  DUTY_CYCLE = 0.50;
-const uint16_t MINIMAL_SPEED = 5;
-const uint16_t MAXIMAL_SPEED = 400;
+uint16_t MINIMAL_SPEED = 5;
+uint16_t MAXIMAL_SPEED = 400;
 
 uint16_t counter_ticks = 0;
 uint8_t after_homming = 0;
@@ -24,18 +47,22 @@ volatile uint8_t endstop_state;
 
 void motor_enable(){
 	HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_SET);
+	motor_state = MOTOR_ENABLED;
 }
 
 void motor_disable(){
 	HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_RESET);
+	motor_state = MOTOR_DISABLED;
 }
 
 void motor_rotate_left(){
 	HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, GPIO_PIN_SET);
+	motor_direction = MOTOR_DIR_LEFT;
 }
 
 void motor_rotate_right(){
 	HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, GPIO_PIN_RESET);
+	motor_direction = MOTOR_DIR_RIGHT;
 }
 
 void motor_step_manual(){
@@ -47,26 +74,27 @@ void motor_step_manual(){
 
 void motor_stop(){
 	HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_1);
+	motor_state = MOTOR_STOPPED;
 }
 
 static uint8_t is_pwm_active_ch1(void) {
     // 1. Timer włączony?
     if ((htim4.Instance->CR1 & TIM_CR1_CEN) == 0) {
-        return 0;
+        return PWM_DISABLED;
     }
 
     // 2. Kanał CH1 włączony?
     if ((htim4.Instance->CCER & TIM_CCER_CC1E) == 0) {
-        return 0;
+        return PWM_DISABLED;
     }
 
     // 3. Tryb ustawiony na PWM (OC1M = 110 lub 111)
     uint32_t oc1m = (htim4.Instance->CCMR1 >> 4) & 0x7;
     if (oc1m < 6) {
-        return 0;
+        return PWM_DISABLED;
     }
 
-    return 1; // PWM aktywny
+    return PWM_ENABLED; // PWM aktywny
 }
 
 
@@ -76,6 +104,7 @@ static uint8_t is_pwm_active_ch1(void) {
 // Funkcja pomocnicza do sprawdzania czy PWM działa na TIM4_CH1
 //funckja ponizej ustawia predkosc walu silnika nie walu przekładni
 void set_speed(int16_t speed) {
+	motor_state = MOTOR_RUNNING;
 
     // Fpwm = Fclk / [(ARR+1)*(PSC+1)]
     // DutyCycle[%] = CCRx/ARR
@@ -92,6 +121,33 @@ void set_speed(int16_t speed) {
     if (!is_pwm_active_ch1()) {
         HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
     }
+}
+
+void change_movement_parameters(uint16_t min_speed, uint16_t max_speed){
+	MINIMAL_SPEED = min_speed;
+	MAXIMAL_SPEED = max_speed;
+}
+
+uint8_t move_via_angle(int16_t angle){
+	if(after_homming == 0){
+		return 1;
+	}
+	int32_t steps = (int32_t)((angle / 360.0) * MICROSTEPPING * 200);
+	if(steps > 0){
+		motor_rotate_right();
+	}else if(steps < 0){
+		motor_rotate_left();
+		steps = -steps;
+	}else{
+		return 0;
+	}
+	set_speed(MAXIMAL_SPEED);
+	uint32_t target_ticks = counter_ticks + steps;
+	while(counter_ticks < target_ticks){
+		//czekaj
+	}
+	motor_stop();
+	return 0;
 }
 
 

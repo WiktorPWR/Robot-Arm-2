@@ -156,6 +156,7 @@ int main(void)
 	  switch(SPI_state){
 		  case SENDING_CONFIRMATION:
 		  {
+			  SPI_state = CONFIRMATION_RECEIVED;
 			  // Przygotuj bufor do wysyłki (jeśli nie został wcześniej przygotowany)
 			  // copying_to_buffer_confirmation_frame(&SPI_message);
 
@@ -177,25 +178,34 @@ int main(void)
 			  sprintf(debug_buffer, "\r\n");
 			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
+			  //HAL_SPI_DMAStop(&hspi1);
+			  //HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
 			  // === Transmisja ramki do mastera ===
-			  HAL_SPI_Transmit(&hspi1, spi_send_confirmation_buffer, bytes_to_send, 100);
+			  HAL_SPI_Transmit(&hspi1, spi_send_confirmation_buffer, bytes_to_send, 200);
+			  HAL_SPI_DMAStop(&hspi1);
+			  __HAL_RCC_SPI1_FORCE_RESET();
 
+			  __HAL_RCC_SPI1_RELEASE_RESET();
+
+			  HAL_SPI_Init(&hspi1);
+			  HAL_Delay(1);
+			  //HAL_SPI_TransmitReceive(&hspi1, spi_send_confirmation_buffer,spi_receive_confirmation_buffer,  BUFFER_FRAME_SIZE,100);
+			  HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
 			  // === DEBUG: Potwierdzenie zakończenia transmisji ===
 			  sprintf(debug_buffer, "[TX] Confirmation frame sent, waiting for ACK...\r\n");
 			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-			  // === Przygotowanie odbioru następnej ramki potwierdzającej od mastera ===
-			  HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
 
 			  // === DEBUG: Potwierdzenie przejścia do kolejnego stanu ===
 			  sprintf(debug_buffer, "[STATE] -> CONFIRMATION_RECEIVED\r\n");
 			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-			  SPI_state = CONFIRMATION_RECEIVED;
+			  //SPI_state = CONFIRMATION_RECEIVED;
 			  break;
 		  }
 
 	  	  case PROCES_CONFRMATION:
+	  		    SPI_state = MESSAGE_RECEIVED;
 				sprintf(debug_buffer, "[RX] Confirmation frame received: \r\n");
 				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
@@ -212,6 +222,13 @@ int main(void)
 				sprintf(debug_buffer, "\r\n");
 				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
+				HAL_SPI_DMAStop(&hspi1);
+			    __HAL_RCC_SPI1_FORCE_RESET();
+
+			    __HAL_RCC_SPI1_RELEASE_RESET();
+
+			    HAL_SPI_Init(&hspi1);
+			    HAL_Delay(1);
 				HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer, BUFFER_FRAME_SIZE);
 
 				SPI_state = MESSAGE_RECEIVED;
