@@ -10,14 +10,12 @@
 
 #include "data_templates.h"
 
-
-
 extern uint8_t data_buffer[MAX_DATA_SIZE];
 extern volatile uint8_t clear_spi_frame;
 
 extern uint8_t spi_frame_buffer[BUFFER_FRAME_SIZE];
 extern uint8_t spi_receive_confirmation_buffer[BUFFER_RECEIVE_CONFIRMATION_SIZE];
-extern uint8_t spi_send_confirmation_buffer[BUFFER_SEND_CONFIRMATION_SIZE];
+extern uint8_t spi_send_confirmation_buffer[BUFFER_FRAME_SIZE];
 
 extern volatile struct message SPI_message;
 extern volatile enum communication_states SPI_state;

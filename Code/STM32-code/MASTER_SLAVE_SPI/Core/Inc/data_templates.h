@@ -24,6 +24,11 @@
  */
 #define MAX_DATA_SIZE 20
 
+/**
+ * @brief Identifier for this slave device in the communication protocol.
+ */
+
+#define SLAVE_ID 0x01
 
 
 /* ==========================================================
@@ -48,9 +53,9 @@
 /**
  * @brief Buffer sizes for SPI communication.
  */
-#define BUFFER_FRAME_SIZE 24
+#define BUFFER_FRAME_SIZE 25
 #define BUFFER_RECEIVE_CONFIRMATION_SIZE 4
-#define BUFFER_SEND_CONFIRMATION_SIZE 22
+
 
 /* ==========================================================
  *  ENUMERATIONS
@@ -77,7 +82,8 @@ enum slave_state {
 enum communication_states {
 	MESSAGE_RECEIVED,        /*!< SPI frame was received and is ready to process */
 	SENDING_CONFIRMATION,    /*!< Waiting to send confirmation frame */
-	CONFIRMATION_RECEIVED    /*!< Confirmation frame received successfully */
+	CONFIRMATION_RECEIVED,    /*!< Confirmation frame received successfully */
+	PROCES_CONFRMATION
 };
 
 /**
@@ -126,6 +132,7 @@ enum error_table {
  */
 struct message_frame {
 	uint8_t start_byte;                  /*!< Frame start byte (always START_BYTE) */
+	uint8_t slave_id;					/*!< Identifier for the slave device */
 	uint8_t command;                     /*!< Command identifier */
 	uint8_t length;                      /*!< Length of valid data[] bytes */
 	uint8_t data[MAX_DATA_SIZE];         /*!< Payload data */
@@ -137,6 +144,7 @@ struct message_frame {
  */
 struct confirmation_receive_frame {
 	uint8_t start_byte;                  /*!< Start byte (usually START_BYTE) */
+	uint8_t slave_id;					/*!< Identifier for the slave device */
 	uint8_t data;                        /*!< Acknowledgment value (OK/ERROR) */
 	uint8_t end_byte;                    /*!< End byte (usually END_BYTE) */
 };

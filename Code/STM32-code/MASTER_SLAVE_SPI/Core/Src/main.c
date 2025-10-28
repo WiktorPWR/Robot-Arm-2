@@ -142,8 +142,10 @@ int main(void)
   MX_TIM4_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  char debug_buffer[100];
   HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer,BUFFER_FRAME_SIZE);
-
+  sprintf(debug_buffer, "SPI START \r\n");
+  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -152,23 +154,80 @@ int main(void)
   while (1)
   {
 	  switch(SPI_state){
-	  	  case SENDING_CONFIRMATION:
-	  		  copying_to_buffer_confirmation_frame(&SPI_message);
-	  		  HAL_SPI_Transmit(&hspi1, spi_send_confirmation_buffer, BUFFER_SEND_CONFIRMATION_SIZE, 100);
-	  		  HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
-	  		  SPI_state = CONFIRMATION_RECEIVED;
-	  		  break;
-	  	  case CONFIRMATION_RECEIVED:
-	  		  if(SPI_message.acknowledge_confirmation){
-	  			  process_received_command(&SPI_message);
+		  case SENDING_CONFIRMATION:
+		  {
+			  // Przygotuj bufor do wysyłki (jeśli nie został wcześniej przygotowany)
+			  // copying_to_buffer_confirmation_frame(&SPI_message);
 
-	  			  //Reset acknowledgment flag
-	  			  SPI_message.acknowledge_confirmation = 0;
-	  			  //Acknowledgment received, proceed as normal
-	  		  } else {
-	  			  //Handle negative acknowledgment
-	  		  }
-	  		  break;
+			  // Ile bajtów wysyłamy: start + slave_id + command + length + dane + end_byte
+			  uint8_t bytes_to_send = 4 + SPI_message.send_confirm.length + 1; // 4: start+slave+cmd+length, +1: end_byte
+
+			  // === DEBUG: Wypisz informację o stanie i ilości bajtów ===
+			  sprintf(debug_buffer, "[TX] Sending confirmation frame (%d bytes)\r\n", bytes_to_send);
+			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+			  // === DEBUG: Wypisz zawartość ramki ===
+			  sprintf(debug_buffer, "[TX] Frame data: ");
+			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+			  for (uint8_t i = 0; i < bytes_to_send; i++) {
+				  sprintf(debug_buffer, "%02X ", spi_send_confirmation_buffer[i]);
+				  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+			  }
+			  sprintf(debug_buffer, "\r\n");
+			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+			  // === Transmisja ramki do mastera ===
+			  HAL_SPI_Transmit(&hspi1, spi_send_confirmation_buffer, bytes_to_send, 100);
+
+			  // === DEBUG: Potwierdzenie zakończenia transmisji ===
+			  sprintf(debug_buffer, "[TX] Confirmation frame sent, waiting for ACK...\r\n");
+			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+			  // === Przygotowanie odbioru następnej ramki potwierdzającej od mastera ===
+			  HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
+
+			  // === DEBUG: Potwierdzenie przejścia do kolejnego stanu ===
+			  sprintf(debug_buffer, "[STATE] -> CONFIRMATION_RECEIVED\r\n");
+			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+			  SPI_state = CONFIRMATION_RECEIVED;
+			  break;
+		  }
+
+	  	  case PROCES_CONFRMATION:
+				sprintf(debug_buffer, "[RX] Confirmation frame received: \r\n");
+				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+				uint8_t error_code = copying_from_buffer_confirmation_frame(&SPI_message);
+				// Wypisanie otrzymanego kodu błędu
+				sprintf(debug_buffer, "[RX] Confirmation parse result: error_code = %d\r\n", error_code);
+				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+
+				for (uint8_t i = 0; i < BUFFER_RECEIVE_CONFIRMATION_SIZE; i++) {
+					sprintf(debug_buffer, "%02X ", spi_receive_confirmation_buffer[i]);
+					HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+				}
+				sprintf(debug_buffer, "\r\n");
+				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+				HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer, BUFFER_FRAME_SIZE);
+
+				SPI_state = MESSAGE_RECEIVED;
+
+				if(SPI_message.acknowledge_confirmation){
+					process_received_command(&SPI_message);
+
+					//Reset acknowledgment flag
+					SPI_message.acknowledge_confirmation = 0;
+					//Acknowledgment received, proceed as normal
+				} else {
+				  //Handle negative acknowledgment
+				}
+		  break;
+
+
 
 	  }
 	  switch(SLAVE_STATE) {
@@ -247,11 +306,11 @@ static void MX_SPI1_Init(void)
   /* SPI1 parameter configuration*/
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_SLAVE;
-  hspi1.Init.Direction = SPI_DIRECTION_1LINE;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.NSS = SPI_NSS_HARD_INPUT;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -425,7 +484,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
+  huart2.Init.BaudRate = 57600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -511,9 +570,6 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, DIR_Pin|PULL_MANUAL_Pin|ENABLE_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
-
   /*Configure GPIO pin : ENDSTOP_Pin */
   GPIO_InitStruct.Pin = ENDSTOP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
@@ -529,9 +585,8 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : SLAVE_END_TASK_Pin */
   GPIO_InitStruct.Pin = SLAVE_END_TASK_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SLAVE_END_TASK_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
