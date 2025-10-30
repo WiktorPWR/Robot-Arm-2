@@ -8,18 +8,26 @@
 #ifndef INC_SPI_FUNCTIONS_H_
 #define INC_SPI_FUNCTIONS_H_
 
-#include <data_templates.h>
+#include "data_templates.h"
 
-#define BUFFER_SIZE 60
+extern uint8_t data_buffer[MAX_DATA_SIZE];
+extern volatile uint8_t clear_spi_frame;
 
-uint8_t spi_buffer[BUFFER_SIZE] = {0};
+extern uint8_t spi_frame_buffer[BUFFER_FRAME_SIZE];
+extern uint8_t spi_receive_confirmation_buffer[BUFFER_RECEIVE_CONFIRMATION_SIZE];
+extern uint8_t spi_send_confirmation_buffer[BUFFER_FRAME_SIZE];
 
-volatile struct message_frame message;
+extern volatile struct message SPI_message;
+extern volatile enum communication_states SPI_state;
+extern volatile enum slave_state SLAVE_STATE;
 
-enum slave_state state = READY;
+/**
+ * @brief Process a received SPI command message.
+ *
+ * @param SPI_message Pointer to the received SPI message structure.
+ */
+void process_received_command(struct message* SPI_message);
 
-volatile uint8_t new_command = 0;//0 no new command
-
-
+uint8_t copying_to_buffer_confirmation_frame(struct message* SPI_message);
 
 #endif /* INC_SPI_FUNCTIONS_H_ */

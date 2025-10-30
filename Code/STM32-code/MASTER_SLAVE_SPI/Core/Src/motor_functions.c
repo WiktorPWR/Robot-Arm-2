@@ -81,6 +81,7 @@ static uint8_t is_pwm_active_ch1(void) {
 // Funkcja pomocnicza do sprawdzania czy PWM działa na TIM4_CH1
 //funckja ponizej ustawia predkosc walu silnika nie walu przekładni
 void set_speed(int16_t speed) {
+	motor_state = MOTOR_RUNNING;
 
     // Fpwm = Fclk / [(ARR+1)*(PSC+1)]
     // DutyCycle[%] = CCRx/ARR
@@ -97,6 +98,33 @@ void set_speed(int16_t speed) {
     if (!is_pwm_active_ch1()) {
         HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
     }
+}
+
+void change_movement_parameters(uint16_t min_speed, uint16_t max_speed){
+	MINIMAL_SPEED = min_speed;
+	MAXIMAL_SPEED = max_speed;
+}
+
+uint8_t move_via_angle(int16_t angle){
+	if(after_homming == 0){
+		return 1;
+	}
+	int32_t steps = (int32_t)((angle / 360.0) * MICROSTEPPING * 200);
+	if(steps > 0){
+		motor_rotate_right();
+	}else if(steps < 0){
+		motor_rotate_left();
+		steps = -steps;
+	}else{
+		return 0;
+	}
+	set_speed(MAXIMAL_SPEED);
+	uint32_t target_ticks = counter_ticks + steps;
+	while(counter_ticks < target_ticks){
+		//czekaj
+	}
+	motor_stop();
+	return 0;
 }
 
 

@@ -77,6 +77,9 @@ void Error_Handler(void);
 #define PULL_MANUAL_GPIO_Port GPIOA
 #define ENABLE_Pin GPIO_PIN_12
 #define ENABLE_GPIO_Port GPIOA
+#define SLAVE_END_TASK_Pin GPIO_PIN_6
+#define SLAVE_END_TASK_GPIO_Port GPIOB
+#define SLAVE_END_TASK_EXTI_IRQn EXTI9_5_IRQn
 #define PULL_PWM_Pin GPIO_PIN_7
 #define PULL_PWM_GPIO_Port GPIOB
 
