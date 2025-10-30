@@ -244,8 +244,6 @@ int main(void)
 				}
 		  break;
 
-
-
 	  }
 	  switch(SLAVE_STATE) {
 	      case IDLE_STATE:
