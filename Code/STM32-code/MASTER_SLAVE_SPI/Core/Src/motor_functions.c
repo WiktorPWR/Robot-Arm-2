@@ -6,8 +6,16 @@
  */
 #include "main.h"
 #include "endstop.h"
+#include "motor/motor_data.h"
 #include "motor/motor_functions.h"
 
+
+uint16_t MINIMAL_SPEED =  5;
+uint16_t MAXIMAL_SPEED = 400;
+uint16_t MAX_ACCELERATION = 50;
+uint16_t MAX_DECELERATION = 50;
+uint16_t MAX_JERK = 100;
+uint16_t MINIMAL_SPEED_END_DISTANCE = 10;
 
 enum Rotation_Direction rotation_direction;
 enum Motor_State motor_state;
@@ -24,12 +32,12 @@ volatile uint8_t endstop_state;
 
 void motor_enable(){
 	HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_SET);
-	motor_state = ENABLED;
+	motor_state = MOTOR_ENABLE;
 }
 
 void motor_disable(){
 	HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_RESET);
-	motor_state = DISABLED;
+	motor_state = MOTOR_DISABLE;
 }
 
 void motor_rotate_left(){
@@ -51,7 +59,7 @@ void motor_step_manual(){
 
 void motor_stop(){
 	HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_1);
-	motor_state = STOPPED;
+
 }
 
 static uint8_t is_pwm_active_ch1(void) {
@@ -81,7 +89,6 @@ static uint8_t is_pwm_active_ch1(void) {
 // Funkcja pomocnicza do sprawdzania czy PWM działa na TIM4_CH1
 //funckja ponizej ustawia predkosc walu silnika nie walu przekładni
 void set_speed(int16_t speed) {
-	motor_state = MOTOR_RUNNING;
 
     // Fpwm = Fclk / [(ARR+1)*(PSC+1)]
     // DutyCycle[%] = CCRx/ARR
@@ -105,41 +112,19 @@ void change_movement_parameters(uint16_t min_speed, uint16_t max_speed){
 	MAXIMAL_SPEED = max_speed;
 }
 
-uint8_t move_via_angle(int16_t angle){
-	if(after_homming == 0){
-		return 1;
-	}
-	int32_t steps = (int32_t)((angle / 360.0) * MICROSTEPPING * 200);
-	if(steps > 0){
-		motor_rotate_right();
-	}else if(steps < 0){
-		motor_rotate_left();
-		steps = -steps;
-	}else{
-		return 0;
-	}
-	set_speed(MAXIMAL_SPEED);
-	uint32_t target_ticks = counter_ticks + steps;
-	while(counter_ticks < target_ticks){
-		//czekaj
-	}
-	motor_stop();
-	return 0;
-}
-
 
 uint8_t homming(){
 	while(endstop_state != 1){
 		set_speed(MINIMAL_SPEED);
 	}
 	motor_stop();
-	counter_ticks = 0;
-	after_homming = 1;
+
 	return HOMMED;
 }
 
 void calculatiing_speed_profile(float target_position){
 	//to be implemented
+	return 0;
 }
 
 
@@ -165,12 +150,10 @@ uint8_t move_via_angle(float angle){
 	}
 
 	//enable motor if its not active
-	if(motor_state == DISABLED){
+	if(motor_state == MOTOR_DISABLE){
 		motor_enable();
 	}
 
-
-
-};
+}
 
 
