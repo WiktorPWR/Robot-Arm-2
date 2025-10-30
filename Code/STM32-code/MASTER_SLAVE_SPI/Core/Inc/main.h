@@ -32,7 +32,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <data_templates.h>
-#include  "motor_functions.h"
+#include  "motor/motor_functions.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
