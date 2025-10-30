@@ -31,12 +31,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "motor_functions.h"
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include "SPI_functions.h"
-#include "data_templates.h"
+#include <data_templates.h>
+#include  "motor/motor_functions.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
