@@ -33,6 +33,9 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include <data_templates.h>
 #include  "motor/motor_functions.h"
+#include "string.h"
+#include "stdio.h"
+#include "stdint.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

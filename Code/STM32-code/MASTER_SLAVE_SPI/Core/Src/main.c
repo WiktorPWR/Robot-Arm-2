@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "motor_functions.h"
+
 #include "SPI_functions.h"
 #include <stdio.h>
 #include <string.h>
