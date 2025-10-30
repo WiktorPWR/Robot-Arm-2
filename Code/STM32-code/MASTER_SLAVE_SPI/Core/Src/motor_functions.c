@@ -6,36 +6,40 @@
  */
 #include "main.h"
 #include "endstop.h"
+#include "motor/motor_functions.h"
 
+
+enum Rotation_Direction rotation_direction;
+enum Motor_State motor_state;
+enum Homming_State homming_state = NOT_HOMMED;
+enum IS_PWM_ACTIVE pwm_state;
+
+uint8_t speed_profile[1000] = {0};
 
 extern TIM_HandleTypeDef htim4;
 
-const uint16_t ARR_VALUE = 65535;
-const uint32_t CLOCK_VALUE = 8000000;// 8 000 000
-const uint8_t  MICROSTEPPING = 16;
-const float  DUTY_CYCLE = 0.50;
-const uint16_t MINIMAL_SPEED = 5;
-const uint16_t MAXIMAL_SPEED = 400;
 
-uint16_t counter_ticks = 0;
-uint8_t after_homming = 0;
-
+volatile uint16_t actual_position;
 volatile uint8_t endstop_state;
 
 void motor_enable(){
 	HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_SET);
+	motor_state = ENABLED;
 }
 
 void motor_disable(){
 	HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_RESET);
+	motor_state = DISABLED;
 }
 
 void motor_rotate_left(){
 	HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, GPIO_PIN_SET);
+	rotation_direction = LEFT;
 }
 
 void motor_rotate_right(){
 	HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, GPIO_PIN_RESET);
+	rotation_direction = RIGHT;
 }
 
 void motor_step_manual(){
@@ -47,26 +51,27 @@ void motor_step_manual(){
 
 void motor_stop(){
 	HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_1);
+	motor_state = STOPPED;
 }
 
 static uint8_t is_pwm_active_ch1(void) {
     // 1. Timer włączony?
     if ((htim4.Instance->CR1 & TIM_CR1_CEN) == 0) {
-        return 0;
+        return TIMER_NOT_ACTIVE;
     }
 
     // 2. Kanał CH1 włączony?
     if ((htim4.Instance->CCER & TIM_CCER_CC1E) == 0) {
-        return 0;
+        return CANAL_NOT_ACTIVE;
     }
 
     // 3. Tryb ustawiony na PWM (OC1M = 110 lub 111)
     uint32_t oc1m = (htim4.Instance->CCMR1 >> 4) & 0x7;
     if (oc1m < 6) {
-        return 0;
+        return SETUP_NOT_ACTIVE;
     }
 
-    return 1; // PWM aktywny
+    return PWM_ACTIVE; // PWM aktywny
 }
 
 
@@ -102,11 +107,41 @@ uint8_t homming(){
 	motor_stop();
 	counter_ticks = 0;
 	after_homming = 1;
-	return 0;
+	return HOMMED;
+}
+
+void calculatiing_speed_profile(float target_position){
+	//to be implemented
 }
 
 
-uint8_t move_via_angle(){
+uint8_t move_via_angle(float angle){
+
+	//check if hommed
+	if(homming_state != HOMMED){
+		return NOT_HOMMED;
+	}
+
+	//check if PWM is active
+	uint8_t pwm_status = is_pwm_active_ch1();
+	if(pwm_status != PWM_ACTIVE){
+		return pwm_status;
+	}
+
+	//Select direction of motor spin
+	if(angle > actual_position){
+		rotation_direction = LEFT;
+	}
+	else{
+		rotation_direction = RIGHT;
+	}
+
+	//enable motor if its not active
+	if(motor_state == DISABLED){
+		motor_enable();
+	}
+
+
 
 };
 
