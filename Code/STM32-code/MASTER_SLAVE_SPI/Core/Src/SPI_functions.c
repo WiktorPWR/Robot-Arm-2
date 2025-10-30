@@ -389,3 +389,8 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
     }
 }
 
+
+void test(){
+	return 0;
+}
+
