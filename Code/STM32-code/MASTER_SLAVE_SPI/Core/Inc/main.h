@@ -36,6 +36,10 @@ extern "C" {
 #include "string.h"
 #include "stdio.h"
 #include "stdint.h"
+#include <stdlib.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

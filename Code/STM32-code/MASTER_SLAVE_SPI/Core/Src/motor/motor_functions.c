@@ -8,21 +8,18 @@
 #include "endstop.h"
 #include "motor/motor_data.h"
 #include "motor/motor_functions.h"
-
+#include "motor/S_curve_mathematic.h"
 
 uint16_t MINIMAL_SPEED =  5;
 uint16_t MAXIMAL_SPEED = 400;
 uint16_t MAX_ACCELERATION = 50;
-uint16_t MAX_DECELERATION = 50;
-uint16_t MAX_JERK = 100;
-uint16_t MINIMAL_SPEED_END_DISTANCE = 10;
+uint16_t MAX_JERK = 10;
 
 enum Rotation_Direction rotation_direction;
 enum Motor_State motor_state;
 enum Homming_State homming_state = NOT_HOMMED;
 enum IS_PWM_ACTIVE pwm_state;
 
-uint8_t speed_profile[1000] = {0};
 
 extern TIM_HandleTypeDef htim4;
 
@@ -122,9 +119,17 @@ uint8_t homming(){
 	return HOMMED;
 }
 
-void calculatiing_speed_profile(float target_position){
-	//to be implemented
-	return 0;
+void calculating_speed_profile(float target_position){
+	config.max_velocity = MAXIMAL_SPEED;
+	config.max_acceleration = MAX_ACCELERATION;
+	config.max_jerk = MAX_JERK;
+	config.interpolation_points = 100;
+
+	// Configure motor (example: 3:1 gear ratio, 16 microsteps, 200 steps/rev)
+	set_motor_config(GEAR_RATIO, MICROSTEPPING, STEPS_PER_REVOLUTION);
+
+	generate_scurve_trajectory(target_position);
+
 }
 
 
@@ -154,6 +159,12 @@ uint8_t move_via_angle(float angle){
 		motor_enable();
 	}
 
+	//Creating speed profile array
+	calculating_speed_profile(angle);
+
+	for(uint16_t i;i<buffer_count;i++){
+
+	}
 }
 
 

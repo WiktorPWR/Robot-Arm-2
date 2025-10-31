@@ -34,3 +34,4 @@ enum IS_PWM_ACTIVE{
 //Hardware setup
 #define STEPS_PER_REVOLUTION 200
 #define MICROSTEPPING 16
+#define GEAR_RATIO 17
