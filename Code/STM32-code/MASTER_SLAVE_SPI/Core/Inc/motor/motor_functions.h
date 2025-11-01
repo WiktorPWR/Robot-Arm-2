@@ -22,7 +22,7 @@ void motor_rotate_right();
 
 void motor_step_manual();
 
-void set_speed(int16_t speed);
+void set_speed(uint16_t speed);
 
 
 #endif /* INC_MOTOR_FUNCTIONS_H_ */
