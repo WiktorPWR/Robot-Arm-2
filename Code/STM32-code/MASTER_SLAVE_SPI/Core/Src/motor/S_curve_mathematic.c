@@ -1,4 +1,4 @@
-/*
+ /*
  * S_curve_mathematic.c
  *
  *  Created on: Oct 31, 2025

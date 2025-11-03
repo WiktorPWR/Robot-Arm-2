@@ -139,7 +139,7 @@ int main(void)
   MX_TIM4_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-  char debug_buffer[100];
+  char debug_buffer[248];
   HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer,BUFFER_FRAME_SIZE);
   sprintf(debug_buffer, "SPI START \r\n");
   HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
@@ -212,11 +212,29 @@ int main(void)
 				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
 
+//				for (uint8_t i = 0; i < BUFFER_RECEIVE_CONFIRMATION_SIZE; i++) {
+//					sprintf(debug_buffer, "%02X ", spi_receive_confirmation_buffer[i]);
+//					HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//					HAL_Delay(1);//DEBBUGING
+//				}
+
+
 				for (uint8_t i = 0; i < BUFFER_RECEIVE_CONFIRMATION_SIZE; i++) {
-					sprintf(debug_buffer, "%02X ", spi_receive_confirmation_buffer[i]);
-					HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+				    // Zbuduj tekst dla bieżącego bajtu
+				    sprintf(debug_buffer, "%02X ", spi_receive_confirmation_buffer[i]);
+				    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), 50);
+
+				    // Jeśli to ostatni bajt, dodaj znak końca linii
+				    if (i == BUFFER_RECEIVE_CONFIRMATION_SIZE - 1) {
+				        sprintf(debug_buffer, "--END--\r\n");
+				        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), 50);
+				    }
 				}
-				sprintf(debug_buffer, "\r\n");
+
+				sprintf(debug_buffer, "--END--\r\n");
+				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+				sprintf(debug_buffer, "[RX] SPI RESET\r\n");
 				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
 				HAL_SPI_DMAStop(&hspi1);
@@ -228,17 +246,29 @@ int main(void)
 			    HAL_Delay(1);
 				HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer, BUFFER_FRAME_SIZE);
 
+				// Sprawdzenie, czy potwierdzenie zostało zaakceptowane
+				sprintf(debug_buffer, "[RX] Acknowledge flag value: %d\r\n", SPI_message.acknowledge_confirmation);
+				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
 				SPI_state = MESSAGE_RECEIVED;
 
-				if(SPI_message.acknowledge_confirmation){
-					process_received_command(&SPI_message);
+				if (SPI_message.acknowledge_confirmation) {
+				        sprintf(debug_buffer, "[STATE] ACK received -> Executing process_received_command()\r\n");
+				        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-					//Reset acknowledgment flag
-					SPI_message.acknowledge_confirmation = 0;
-					//Acknowledgment received, proceed as normal
-				} else {
-				  //Handle negative acknowledgment
-				}
+				        process_received_command(&SPI_message);
+
+				        // Reset acknowledgment flag
+				        SPI_message.acknowledge_confirmation = 0;
+
+				        sprintf(debug_buffer, "[STATE] Command processed, ACK flag cleared\r\n");
+				        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+				    } else {
+				        sprintf(debug_buffer, "[STATE] NACK received -> Skipping command processing\r\n");
+				        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+				        // Można dodać więcej logiki np. retransmisję
+				    }
 		  break;
 
 	  }
@@ -246,16 +276,21 @@ int main(void)
 	      case IDLE_STATE:
 	          break;
 	      case HOMMING_STATE:
+	      case MANUAL_CONTROL_STATE:
 	      case MOVING_STATE:
 	      case STOP_STATE:
 	      case SENDING_STATE:
+	      case ERROR_STATE:
 	      case CHAGING_MOVEMENT_VALUES_STATE:
 	      case DIAGNOSTIC_STATE:
+	    	  sprintf(debug_buffer, "[STATE] WE SET PIN IN HIGH\r\n");
+	    	  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 	          HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_SET);
 	          // Wywołanie odpowiedniej funkcji:
 	          handle_slave_state(SLAVE_STATE);
 	          break;
 	  }
+	  SLAVE_STATE = IDLE_STATE;
 
     /* USER CODE END WHILE */
 
@@ -537,6 +572,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, DIR_Pin|PULL_MANUAL_Pin|ENABLE_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : ENDSTOP_Pin */
   GPIO_InitStruct.Pin = ENDSTOP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
@@ -552,8 +590,9 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : SLAVE_END_TASK_Pin */
   GPIO_InitStruct.Pin = SLAVE_END_TASK_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SLAVE_END_TASK_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/

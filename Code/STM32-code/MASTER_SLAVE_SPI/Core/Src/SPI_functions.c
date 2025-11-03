@@ -295,6 +295,8 @@ void process_received_command(struct message* SPI_message){
 			break;
 		case ACCEPT_CONFIRMATION_COMMAND:
 			SLAVE_STATE = IDLE_STATE;
+			sprintf(debug_buffer, "\r\n[PRG] Reset command had been use\r\n");
+			HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 			HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
 		    break;
 		default:
@@ -322,7 +324,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
     sprintf(debug_buffer, "\r\n[INT] SPI RX interrupt triggered\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-    if (check_slave_address() != 1) {
+    if (check_slave_address() != 0x01) {
         sprintf(debug_buffer, "[INT] Ignored frame (wrong slave ID)\r\n");
         HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
         return;
