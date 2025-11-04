@@ -67,6 +67,20 @@ static void MX_TIM4_Init(void);
 static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
+void restart_spi(){
+	HAL_SPI_DMAStop(&hspi1);
+    __HAL_RCC_SPI1_FORCE_RESET();
+
+    __HAL_RCC_SPI1_RELEASE_RESET();
+
+    HAL_SPI_Init(&hspi1);
+    HAL_Delay(1);
+
+    HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
+}
+
+
+
 void handle_slave_state(uint8_t state) {
     switch(state) {
 		case HOMMING_STATE:
@@ -140,6 +154,7 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   char debug_buffer[248];
+  HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
   HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer,BUFFER_FRAME_SIZE);
   sprintf(debug_buffer, "SPI START \r\n");
   HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
@@ -179,15 +194,8 @@ int main(void)
 			  //HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
 			  // === Transmisja ramki do mastera ===
 			  HAL_SPI_Transmit(&hspi1, spi_send_confirmation_buffer, bytes_to_send, 200);
-			  HAL_SPI_DMAStop(&hspi1);
-			  __HAL_RCC_SPI1_FORCE_RESET();
 
-			  __HAL_RCC_SPI1_RELEASE_RESET();
-
-			  HAL_SPI_Init(&hspi1);
-			  HAL_Delay(1);
-			  //HAL_SPI_TransmitReceive(&hspi1, spi_send_confirmation_buffer,spi_receive_confirmation_buffer,  BUFFER_FRAME_SIZE,100);
-			  HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
+			  restart_spi();
 			  // === DEBUG: Potwierdzenie zakończenia transmisji ===
 			  sprintf(debug_buffer, "[TX] Confirmation frame sent, waiting for ACK...\r\n");
 			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
@@ -237,14 +245,7 @@ int main(void)
 				sprintf(debug_buffer, "[RX] SPI RESET\r\n");
 				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-				HAL_SPI_DMAStop(&hspi1);
-			    __HAL_RCC_SPI1_FORCE_RESET();
-
-			    __HAL_RCC_SPI1_RELEASE_RESET();
-
-			    HAL_SPI_Init(&hspi1);
-			    HAL_Delay(1);
-				HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer, BUFFER_FRAME_SIZE);
+				restart_spi();
 
 				// Sprawdzenie, czy potwierdzenie zostało zaakceptowane
 				sprintf(debug_buffer, "[RX] Acknowledge flag value: %d\r\n", SPI_message.acknowledge_confirmation);
