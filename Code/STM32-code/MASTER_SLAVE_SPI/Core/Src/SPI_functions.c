@@ -64,6 +64,8 @@ uint8_t copying_from_buffer_normal_frame(struct message* SPI_message){
 		return WRONG_START_BYTE;
 	}
 
+	//To do: Here you need to make pcetrcion before using any new command first its need to reset
+
 	// --- Command i length ---
 	SPI_message->frame.command = rx_buf[COMMAND_POSITION];
 	SPI_message->frame.length  = rx_buf[LENGTH_POSITION];
@@ -94,6 +96,7 @@ uint8_t copying_from_buffer_normal_frame(struct message* SPI_message){
 		default:
 			return NO_SUCH_COMMAND_VALUE;
 	}
+
 
 	// --- Kopiowanie danych tylko jeśli length > 0 ---
 	if(SPI_message->frame.length > 0){
@@ -297,7 +300,7 @@ void process_received_command(struct message* SPI_message){
 			SLAVE_STATE = IDLE_STATE;
 			sprintf(debug_buffer, "\r\n[PRG] Reset command had been use\r\n");
 			HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-			HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
+		    HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
 		    break;
 		default:
 			SLAVE_STATE = IDLE_STATE;

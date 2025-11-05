@@ -67,7 +67,13 @@ static void MX_TIM4_Init(void);
 static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
+
+
+// TO DO:
+//You must change this immediately
+
 void restart_spi(){
+
 	HAL_SPI_DMAStop(&hspi1);
     __HAL_RCC_SPI1_FORCE_RESET();
 
@@ -79,12 +85,25 @@ void restart_spi(){
     HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
 }
 
+void restart_spi_2() {
 
+	HAL_SPI_DMAStop(&hspi1);
+	__HAL_RCC_SPI1_FORCE_RESET();
+
+	__HAL_RCC_SPI1_RELEASE_RESET();
+
+	HAL_SPI_Init(&hspi1);
+	HAL_Delay(1);
+
+    // Restart odbioru DMA
+    HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer, BUFFER_FRAME_SIZE);
+}
 
 void handle_slave_state(uint8_t state) {
+
     switch(state) {
 		case HOMMING_STATE:
-			HAL_Delay(1000);
+			HAL_Delay(5000);
 			//perform_homing();
 			break;
 		case MOVING_STATE:
@@ -107,6 +126,8 @@ void handle_slave_state(uint8_t state) {
 			// Handle unknown state if necessary
 			break;
 	}
+    clear_spi_message(&SPI_message);
+
 }
 
 
@@ -231,12 +252,6 @@ int main(void)
 				    // Zbuduj tekst dla bieżącego bajtu
 				    sprintf(debug_buffer, "%02X ", spi_receive_confirmation_buffer[i]);
 				    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), 50);
-
-				    // Jeśli to ostatni bajt, dodaj znak końca linii
-				    if (i == BUFFER_RECEIVE_CONFIRMATION_SIZE - 1) {
-				        sprintf(debug_buffer, "--END--\r\n");
-				        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), 50);
-				    }
 				}
 
 				sprintf(debug_buffer, "--END--\r\n");
@@ -245,7 +260,7 @@ int main(void)
 				sprintf(debug_buffer, "[RX] SPI RESET\r\n");
 				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-				restart_spi();
+				restart_spi_2();
 
 				// Sprawdzenie, czy potwierdzenie zostało zaakceptowane
 				sprintf(debug_buffer, "[RX] Acknowledge flag value: %d\r\n", SPI_message.acknowledge_confirmation);
@@ -284,11 +299,13 @@ int main(void)
 	      case ERROR_STATE:
 	      case CHAGING_MOVEMENT_VALUES_STATE:
 	      case DIAGNOSTIC_STATE:
-	    	  sprintf(debug_buffer, "[STATE] WE SET PIN IN HIGH\r\n");
-	    	  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-	          HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_SET);
-	          // Wywołanie odpowiedniej funkcji:
 	          handle_slave_state(SLAVE_STATE);
+	          sprintf(debug_buffer, "[STATE] WE SET PIN IN HIGH\r\n");
+	          HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+	          HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_SET);
+//	          sprintf(debug_buffer, "[STATE] WE SET PIN IN LOW\r\n");
+//	          HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 	          break;
 	  }
 	  SLAVE_STATE = IDLE_STATE;
