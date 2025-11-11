@@ -103,11 +103,13 @@ void handle_slave_state(uint8_t state) {
 
     switch(state) {
 		case HOMMING_STATE:
-			HAL_Delay(5000);
+			homming();
 			//perform_homing();
 			break;
 		case MOVING_STATE:
-			HAL_Delay(3000);
+			float angle = 0;
+			memcpy(&angle,SPI_message.frame.data,sizeof(float));
+			move_via_angle(angle);
 			//perform_movement();
 			break;
 		case STOP_STATE:
@@ -241,11 +243,11 @@ int main(void)
 				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
 
-//				for (uint8_t i = 0; i < BUFFER_RECEIVE_CONFIRMATION_SIZE; i++) {
-//					sprintf(debug_buffer, "%02X ", spi_receive_confirmation_buffer[i]);
-//					HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-//					HAL_Delay(1);//DEBBUGING
-//				}
+				for (uint8_t i = 0; i < BUFFER_RECEIVE_CONFIRMATION_SIZE; i++) {
+					sprintf(debug_buffer, "%02X ", spi_receive_confirmation_buffer[i]);
+					HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+					HAL_Delay(1);//DEBBUGING
+				}
 
 
 				for (uint8_t i = 0; i < BUFFER_RECEIVE_CONFIRMATION_SIZE; i++) {
@@ -451,6 +453,7 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
 
@@ -462,7 +465,16 @@ static void MX_TIM4_Init(void)
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 65535;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
   {
     Error_Handler();
@@ -595,8 +607,8 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : ENDSTOP_Pin */
   GPIO_InitStruct.Pin = ENDSTOP_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(ENDSTOP_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : DIR_Pin PULL_MANUAL_Pin ENABLE_Pin */
@@ -612,10 +624,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SLAVE_END_TASK_GPIO_Port, &GPIO_InitStruct);
-
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 

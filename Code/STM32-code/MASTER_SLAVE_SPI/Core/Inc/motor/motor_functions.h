@@ -24,5 +24,7 @@ void motor_step_manual();
 
 void set_speed(uint16_t speed);
 
+uint8_t move_via_angle(float angle);
+
 
 #endif /* INC_MOTOR_FUNCTIONS_H_ */

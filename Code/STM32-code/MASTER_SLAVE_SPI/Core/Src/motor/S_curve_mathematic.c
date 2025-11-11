@@ -471,6 +471,16 @@ bool generate_scurve_trajectory(double target_angle) {
     return true;
 }
 
+void set_motor_config(double gear_ratio, uint16_t microsteps, uint16_t steps_per_rev) {
+    if (gear_ratio <= 0.0 || microsteps == 0 || steps_per_rev == 0) {
+        return;
+    }
+
+    config.motor.gear_ratio = gear_ratio;
+    config.motor.microsteps = microsteps;
+    config.motor.steps_per_rev = steps_per_rev;
+}
+
 
 
 

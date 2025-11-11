@@ -24,8 +24,13 @@ enum IS_PWM_ACTIVE pwm_state;
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim2;
 
-volatile uint16_t actual_position;
+volatile uint16_t actual_position = 0;
 volatile uint8_t endstop_state;
+
+
+
+extern UART_HandleTypeDef huart2;
+extern char debug_buffer[100];
 
 
 /**
@@ -33,7 +38,7 @@ volatile uint8_t endstop_state;
  * @note   Sets the motor state to MOTOR_ENABLE.
  */
 void motor_enable(){
-	HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_RESET);
 	motor_state = MOTOR_ENABLE;
 }
 
@@ -42,7 +47,7 @@ void motor_enable(){
  * @note   Sets the motor state to MOTOR_DISABLE.
  */
 void motor_disable(){
-	HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(ENABLE_GPIO_Port, ENABLE_Pin, GPIO_PIN_SET);
 	motor_state = MOTOR_DISABLE;
 }
 
@@ -69,9 +74,11 @@ void motor_rotate_right(){
  * @note   Useful for manual fine-positioning or debugging.
  */
 void motor_step_manual(){
+
 	HAL_GPIO_WritePin(PULL_MANUAL_GPIO_Port, PULL_MANUAL_Pin, GPIO_PIN_SET);
-	HAL_Delay(10);//10 ms
+	HAL_Delay(100);//10 ms
 	HAL_GPIO_WritePin(PULL_MANUAL_GPIO_Port, PULL_MANUAL_Pin, GPIO_PIN_RESET);
+	HAL_Delay(100);//10 ms
 }
 
 /**
@@ -83,26 +90,51 @@ void motor_stop(){
 
 
 /**
- * @brief  Checks if PWM output on TIM4 Channel 1 is active.
- * @retval PWM_ACTIVE if timer and channel are configured and enabled.
- * @retval TIMER_NOT_ACTIVE, CANAL_NOT_ACTIVE, or SETUP_NOT_ACTIVE otherwise.
+ * @brief  Ensures TIM4 Channel 2 PWM output is active.
+ *         Attempts to enable timer and channel if they are off.
+ * @retval PWM_ACTIVE if PWM is confirmed running.
+ * @retval SETUP_NOT_ACTIVE if PWM mode not configured.
+ * @retval CANAL_NOT_ACTIVE or TIMER_NOT_ACTIVE if cannot be activated.
  */
-static uint8_t is_pwm_active_ch1(void) {
-    // 1. Timer enabled?
-    if ((htim4.Instance->CR1 & TIM_CR1_CEN) == 0)
-        return TIMER_NOT_ACTIVE;
+static uint8_t is_pwm_active_ch2(void) {
+    // --- 1. Timer enabled? ---
+    if ((htim4.Instance->CR1 & TIM_CR1_CEN) == 0) {
+        // Try to enable the timer
+        htim4.Instance->CR1 |= TIM_CR1_CEN;
 
-    // 2. Channel enabled?
-    if ((htim4.Instance->CCER & TIM_CCER_CC1E) == 0)
-        return CANAL_NOT_ACTIVE;
+        // Small delay (1–2 cycles) to ensure write takes effect
+        __DSB();
+        __NOP();
 
-    // 3. PWM mode set?
-    uint32_t oc1m = (htim4.Instance->CCMR1 >> 4) & 0x7;
-    if (oc1m < 6)
+        // Re-check
+        if ((htim4.Instance->CR1 & TIM_CR1_CEN) == 0)
+            return TIMER_NOT_ACTIVE;
+    }
+
+    // --- 2. Channel enabled? ---
+    if ((htim4.Instance->CCER & TIM_CCER_CC2E) == 0) {
+        // Try to enable the channel output
+        htim4.Instance->CCER |= TIM_CCER_CC2E;
+
+        __DSB();
+        __NOP();
+
+        // Re-check
+        if ((htim4.Instance->CCER & TIM_CCER_CC2E) == 0)
+            return CANAL_NOT_ACTIVE;
+    }
+
+    // --- 3. PWM mode set? ---
+    uint32_t oc2m = (htim4.Instance->CCMR1 >> 12) & 0x7;
+    if (oc2m < 6)  // 6 = PWM mode 1, 7 = PWM mode 2
         return SETUP_NOT_ACTIVE;
+
+    // --- 4. Optional: verify output polarity / preload ---
+    // Można dodać np. sprawdzenie CC2P lub OC2PE jeśli potrzebne
 
     return PWM_ACTIVE;
 }
+
 
 
 /**
@@ -151,9 +183,15 @@ void set_speed(uint16_t speed_steps_per_s)
 
     // --- 5. Check if PWM channel is already active ---
     // If not, start PWM generation on TIM4 Channel 1.
-    if (!is_pwm_active_ch1())
+    if (is_pwm_active_ch2() == 5)
     {
         HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+    }else
+    {
+    	uint8_t pwm_status = is_pwm_active_ch2();
+    	sprintf(debug_buffer, "[ERROR] PWM inactive (status=%d)\r\n", pwm_status);
+    	HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
     }
 
     // --- 6. Function complete ---
@@ -181,14 +219,43 @@ void change_movement_parameters(uint16_t min_speed, uint16_t max_speed, uint16_t
  * @retval HOMMED if successful.
  * @note   Runs motor at MINIMAL_SPEED until endstop_state == 1.
  */
-uint8_t homming(){
-	while(endstop_state != 1){
-		set_speed(MINIMAL_SPEED);
-	}
-	motor_stop();
+uint8_t homming(void) {
+    uint8_t prev_state = 1;
+    uint8_t curr_state = 1;
+    //uint32_t debounce_time = 0;
 
-	return HOMMED;
+    motor_rotate_left();
+    motor_enable();
+    set_speed(MINIMAL_SPEED);
+
+    sprintf(debug_buffer, "\r\n[HOME] Start homming\r\n");
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+    while (1) {
+        curr_state = HAL_GPIO_ReadPin(ENDSTOP_GPIO_Port, ENDSTOP_Pin);
+
+        // wykrycie zbocza opadającego
+        if (prev_state == 0 && curr_state == 1) {
+            // debouncing: poczekaj 10 ms i sprawdź ponownie
+            HAL_Delay(10);
+            if (HAL_GPIO_ReadPin(ENDSTOP_GPIO_Port, ENDSTOP_Pin) == 1) {
+                sprintf(debug_buffer, "[HOME] Falling edge detected!\r\n");
+                HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+                break;
+            }
+        }
+
+        prev_state = curr_state;
+    }
+
+    motor_stop();
+    sprintf(debug_buffer, "\r\n[HOME] Homing done ;)\r\n");
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+    homming_state = HOMMED;
+    return HOMMED;
 }
+
 
 /**
  * @brief  Generates S-curve motion trajectory based on target position.
@@ -217,14 +284,25 @@ void calculating_speed_profile(float target_position){
  */
 uint8_t move_via_angle(float angle)
 {
-    // Check if homing was done
-    if (homming_state != HOMMED)
-        return NOT_HOMMED;
+	//WE HAVE GOT LITTLE ENDIAN HERE !!!!!!!!!!!!!!!!!!!!!
+    sprintf(debug_buffer, "\r\n[DEBUG] move_via_angle(%.2f)\r\n", angle);
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
+    // Check if homing was done
+    if (homming_state != HOMMED) {
+        sprintf(debug_buffer, "[ERROR] Homing not done!\r\n");
+        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+        return NOT_HOMMED;
+    }
+
+    HAL_TIMEx_PWMN_Start(&htim4, TIM_CHANNEL_2);
     // Check PWM state
-    uint8_t pwm_status = is_pwm_active_ch1();
-    if (pwm_status != PWM_ACTIVE)
-        return pwm_status;
+//    uint8_t pwm_status = is_pwm_active_ch2();
+//    if (pwm_status != PWM_ACTIVE) {
+//        sprintf(debug_buffer, "[ERROR] PWM inactive (status=%d)\r\n", pwm_status);
+//        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//        return pwm_status;
+//    }
 
     // Determine rotation direction
     if (angle > actual_position)
@@ -232,14 +310,30 @@ uint8_t move_via_angle(float angle)
     else
         rotation_direction = RIGHT;
 
+    sprintf(debug_buffer, "[INFO] Rotation direction: %s\r\n",
+            (rotation_direction == LEFT) ? "LEFT" : "RIGHT");
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
     // Enable motor if needed
-    if (motor_state == MOTOR_DISABLE)
+    if (motor_state == MOTOR_DISABLE) {
+        sprintf(debug_buffer, "[INFO] Enabling motor...\r\n");
+        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
         motor_enable();
+    }
 
     // Generate motion profile
+    uint32_t t0 = HAL_GetTick();
     calculating_speed_profile(angle);
+    uint32_t t1 = HAL_GetTick();
+
+
+    sprintf(debug_buffer, "[INFO] Profile calc time: %lu ms\r\n", (t1 - t0));
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // Execute motion
+    sprintf(debug_buffer, "[INFO] Starting motion execution...\r\n");
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
     uint32_t start_time = HAL_GetTick();
     uint32_t current_time = 0;
     uint8_t actual_value = 0;
@@ -249,11 +343,18 @@ uint8_t move_via_angle(float angle)
         while (trajectory_buffer[i].time_ms >= (current_time - start_time)) {
             if (actual_value == 0) {
                 set_speed(trajectory_buffer[i].velocity_raw);
+                //sprintf(debug_buffer, "[STEP] i=%u | v_raw=%.2f | t=%lu\r\n",
+                //        i, trajectory_buffer[i].velocity_raw, current_time - start_time);
+                //HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
                 actual_value = 1;
             }
+            current_time = HAL_GetTick(); // odświeżenie czasu wewnątrz pętli!
         }
         actual_value = 0;
     }
+
+    sprintf(debug_buffer, "[INFO] Main motion finished. Fine positioning...\r\n");
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // Fine positioning phase (creep move)
     while (actual_position < angle + PERMITTED_POSITION_DEVIATION_VALUE &&
@@ -261,10 +362,16 @@ uint8_t move_via_angle(float angle)
         motor_step_manual();
     }
 
+    sprintf(debug_buffer, "[INFO] Backlash compensation (overshoot)...\r\n");
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
     // Overshoot slightly for backlash compensation
     for (uint8_t i = 0; i < ADDITIONAL_STEP; i++) {
         motor_step_manual();
     }
+
+    sprintf(debug_buffer, "[SUCCESS] Movement done.\r\n");
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     return MOVEMENT_DONE;
 }

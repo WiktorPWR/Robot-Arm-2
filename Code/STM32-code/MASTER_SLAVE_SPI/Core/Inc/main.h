@@ -77,7 +77,6 @@ void Error_Handler(void);
 #define AXIS_RX_GPIO_Port GPIOB
 #define ENDSTOP_Pin GPIO_PIN_9
 #define ENDSTOP_GPIO_Port GPIOA
-#define ENDSTOP_EXTI_IRQn EXTI9_5_IRQn
 #define DIR_Pin GPIO_PIN_10
 #define DIR_GPIO_Port GPIOA
 #define PULL_MANUAL_Pin GPIO_PIN_11
