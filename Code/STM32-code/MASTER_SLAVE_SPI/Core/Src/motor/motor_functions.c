@@ -10,9 +10,9 @@
 #include "motor/motor_functions.h"
 #include "motor/S_curve_mathematic.h"
 
-uint16_t MINIMAL_SPEED =  5;
-uint16_t MAXIMAL_SPEED = 400;
-uint16_t MAX_ACCELERATION = 50;
+uint16_t MINIMAL_SPEED =  20;
+uint16_t MAXIMAL_SPEED = 100;
+uint16_t MAX_ACCELERATION = 10;
 uint16_t MAX_JERK = 10;
 
 enum Rotation_Direction rotation_direction;
