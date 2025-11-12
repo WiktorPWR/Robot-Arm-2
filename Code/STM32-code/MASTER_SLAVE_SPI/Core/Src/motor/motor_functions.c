@@ -21,7 +21,7 @@ enum Homming_State homming_state = NOT_HOMMED;
 enum IS_PWM_ACTIVE pwm_state;
 
 
-extern TIM_HandleTypeDef htim4;
+
 extern TIM_HandleTypeDef htim2;
 
 volatile uint16_t actual_position = 0;
@@ -85,12 +85,12 @@ void motor_step_manual(){
  * @brief  Stops PWM output for motor motion (disables channel 1).
  */
 void motor_stop(){
-	HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_1);
+	HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
 }
 
 
 /**
- * @brief  Ensures TIM4 Channel 2 PWM output is active.
+ * @brief  Ensures TIM2 Channel 1 PWM output is active.
  *         Attempts to enable timer and channel if they are off.
  * @retval PWM_ACTIVE if PWM is confirmed running.
  * @retval SETUP_NOT_ACTIVE if PWM mode not configured.
@@ -98,42 +98,40 @@ void motor_stop(){
  */
 static uint8_t is_pwm_active_ch2(void) {
     // --- 1. Timer enabled? ---
-    if ((htim4.Instance->CR1 & TIM_CR1_CEN) == 0) {
-        // Try to enable the timer
-        htim4.Instance->CR1 |= TIM_CR1_CEN;
+    if ((htim2.Instance->CR1 & TIM_CR1_CEN) == 0) {
+        // Spróbuj włączyć timer
+        htim2.Instance->CR1 |= TIM_CR1_CEN;
 
-        // Small delay (1–2 cycles) to ensure write takes effect
+        // Krótka synchronizacja
         __DSB();
         __NOP();
 
-        // Re-check
-        if ((htim4.Instance->CR1 & TIM_CR1_CEN) == 0)
+        // Ponowne sprawdzenie
+        if ((htim2.Instance->CR1 & TIM_CR1_CEN) == 0)
             return TIMER_NOT_ACTIVE;
     }
 
-    // --- 2. Channel enabled? ---
-    if ((htim4.Instance->CCER & TIM_CCER_CC2E) == 0) {
-        // Try to enable the channel output
-        htim4.Instance->CCER |= TIM_CCER_CC2E;
+    // --- 2. Channel 1 enabled? ---
+    if ((htim2.Instance->CCER & TIM_CCER_CC1E) == 0) {
+        // Spróbuj włączyć wyjście kanału
+        htim2.Instance->CCER |= TIM_CCER_CC1E;
 
         __DSB();
         __NOP();
 
-        // Re-check
-        if ((htim4.Instance->CCER & TIM_CCER_CC2E) == 0)
+        // Ponowne sprawdzenie
+        if ((htim2.Instance->CCER & TIM_CCER_CC1E) == 0)
             return CANAL_NOT_ACTIVE;
     }
 
-    // --- 3. PWM mode set? ---
-    uint32_t oc2m = (htim4.Instance->CCMR1 >> 12) & 0x7;
-    if (oc2m < 6)  // 6 = PWM mode 1, 7 = PWM mode 2
+    // --- 3. PWM mode ustawiony dla kanału 1? ---
+    uint32_t oc1m = htim2.Instance->CCMR1 & 0x7;  // bity 0-2 dla OC1M
+    if (oc1m < 6)  // 6 = PWM mode 1, 7 = PWM mode 2
         return SETUP_NOT_ACTIVE;
-
-    // --- 4. Optional: verify output polarity / preload ---
-    // Można dodać np. sprawdzenie CC2P lub OC2PE jeśli potrzebne
 
     return PWM_ACTIVE;
 }
+
 
 
 
@@ -150,54 +148,91 @@ static uint8_t is_pwm_active_ch2(void) {
  */
 void set_speed(uint16_t speed_steps_per_s)
 {
+    // --- 0. Debug info ---
+    sprintf(debug_buffer, "\r\n[set_speed] Called with speed=%u steps/s\r\n", speed_steps_per_s);
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
     // --- 1. Handle case when motor should stop ---
-    // If requested speed = 0 → stop PWM output entirely.
     if (speed_steps_per_s == 0)
     {
-        HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_1);
+        HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+        sprintf(debug_buffer, "[set_speed] Speed = 0 -> PWM stopped\r\n");
+        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
         return;
     }
 
     // --- 2. Calculate initial ARR value (assuming prescaler = 0) ---
-    // Formula: ARR = (CLOCK_VALUE / Fpwm) - 1
-    // Example: 8 MHz / 2000 steps/s = 4000 → ARR = 3999
     uint32_t arr_value = (CLOCK_VALUE / speed_steps_per_s) - 1;
+    sprintf(debug_buffer, "[set_speed] Initial ARR (PSC=0) = %lu\r\n", arr_value);
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // --- 3. Adjust prescaler dynamically if ARR exceeds 16-bit limit ---
-    // 16-bit timers can only count up to 65535.
-    // If ARR > 65535, increase prescaler until ARR fits in range.
     uint16_t prescaler = 0;
     while (arr_value > 0xFFFF)
     {
         prescaler++;
         arr_value = (CLOCK_VALUE / ((prescaler + 1) * speed_steps_per_s)) - 1;
     }
+    sprintf(debug_buffer, "[set_speed] Adjusted ARR=%lu, PSC=%u\r\n", arr_value, prescaler);
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // --- 4. Apply calculated values to timer registers ---
-    // PSC  → divides the timer input clock
-    // ARR  → defines PWM period (frequency)
-    // CCR1 → defines duty cycle (50%)
-    htim4.Instance->PSC  = prescaler;
-    htim4.Instance->ARR  = (uint16_t)arr_value;
-    htim4.Instance->CCR1 = (uint16_t)(0.5f * arr_value); // 50% high / 50% low
+    htim2.Instance->PSC  = prescaler;
+    htim2.Instance->ARR  = (uint16_t)arr_value;
+    htim2.Instance->CCR1 = (uint16_t)(0.5f * arr_value);
 
-    // --- 5. Check if PWM channel is already active ---
-    // If not, start PWM generation on TIM4 Channel 1.
-    if (is_pwm_active_ch2() == 5)
+    sprintf(debug_buffer, "[set_speed] Timer configured -> PSC=%lu, ARR=%lu, CCR1=%lu\r\n",
+            (uint32_t)htim2.Instance->PSC,
+            (uint32_t)htim2.Instance->ARR,
+            (uint32_t)htim2.Instance->CCR1);
+
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+    // --- 5. Check if PWM channel is active ---
+    uint8_t pwm_status = is_pwm_active_ch2();
+    sprintf(debug_buffer, "[set_speed] PWM status = %d\r\n", pwm_status);
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+    if (pwm_status == 5)
     {
-        HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
-    }else
-    {
-    	uint8_t pwm_status = is_pwm_active_ch2();
-    	sprintf(debug_buffer, "[ERROR] PWM inactive (status=%d)\r\n", pwm_status);
+    	HAL_StatusTypeDef pwm_status_hal = HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
+    	sprintf(debug_buffer, "[set_speed] HAL_TIM_PWM_Start() returned: %d\r\n", pwm_status_hal);
+    	HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+    	switch (pwm_status_hal)
+    	{
+    	    case HAL_OK:
+    	        sprintf(debug_buffer, "[set_speed] PWM start -> OK\r\n");
+    	        break;
+    	    case HAL_ERROR:
+    	        sprintf(debug_buffer, "[set_speed] PWM start -> ERROR\r\n");
+    	        break;
+    	    case HAL_BUSY:
+    	        sprintf(debug_buffer, "[set_speed] PWM start -> BUSY\r\n");
+    	        break;
+    	    case HAL_TIMEOUT:
+    	        sprintf(debug_buffer, "[set_speed] PWM start -> TIMEOUT\r\n");
+    	        break;
+    	    default:
+    	        sprintf(debug_buffer, "[set_speed] PWM start -> UNKNOWN\r\n");
+    	        break;
+    	}
+
     	HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     }
+    else
+    {
+        sprintf(debug_buffer, "[ERROR] PWM inactive (status=%d) -> Not starting\r\n", pwm_status);
+        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+    }
 
-    // --- 6. Function complete ---
-    // Timer now outputs a square wave signal with frequency = speed_steps_per_s.
-    // Each rising edge corresponds to one step pulse for the driver.
+    // --- 6. Final debug ---
+    sprintf(debug_buffer, "[set_speed] Complete. Output freq ≈ %u Hz\r\n", speed_steps_per_s);
+    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 }
+
 
 
 
@@ -295,7 +330,7 @@ uint8_t move_via_angle(float angle)
         return NOT_HOMMED;
     }
 
-    HAL_TIMEx_PWMN_Start(&htim4, TIM_CHANNEL_2);
+    HAL_TIMEx_PWMN_Start(&htim2, TIM_CHANNEL_1);
     // Check PWM state
 //    uint8_t pwm_status = is_pwm_active_ch2();
 //    if (pwm_status != PWM_ACTIVE) {

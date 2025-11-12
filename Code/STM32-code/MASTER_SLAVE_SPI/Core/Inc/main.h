@@ -67,14 +67,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Ncoder_A_Pin GPIO_PIN_6
-#define Ncoder_A_GPIO_Port GPIOA
-#define Ncoder_B_Pin GPIO_PIN_7
-#define Ncoder_B_GPIO_Port GPIOA
-#define AXIS_TX_Pin GPIO_PIN_10
-#define AXIS_TX_GPIO_Port GPIOB
-#define AXIS_RX_Pin GPIO_PIN_11
-#define AXIS_RX_GPIO_Port GPIOB
+#define PULL_PWM_Pin GPIO_PIN_0
+#define PULL_PWM_GPIO_Port GPIOA
 #define ENDSTOP_Pin GPIO_PIN_9
 #define ENDSTOP_GPIO_Port GPIOA
 #define DIR_Pin GPIO_PIN_10
@@ -85,8 +79,6 @@ void Error_Handler(void);
 #define ENABLE_GPIO_Port GPIOA
 #define SLAVE_END_TASK_Pin GPIO_PIN_6
 #define SLAVE_END_TASK_GPIO_Port GPIOB
-#define PULL_PWM_Pin GPIO_PIN_7
-#define PULL_PWM_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

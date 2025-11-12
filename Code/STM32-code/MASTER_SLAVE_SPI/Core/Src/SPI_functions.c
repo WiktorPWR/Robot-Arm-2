@@ -331,7 +331,8 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
         sprintf(debug_buffer, "[INT] Ignored frame (wrong slave ID)\r\n");
         HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
         return;
-    }
+    }else{
+
 
     switch (SPI_state)
     {
@@ -342,15 +343,15 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
             preparing_response_for_master(&SPI_message, error_code);
             copying_to_buffer_confirmation_frame(&SPI_message);
 
-//            // --- Log odebranej ramki ---
-//            sprintf(debug_buffer, "[RX] Frame received (%d bytes): ", BUFFER_FRAME_SIZE);
-//            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-//            for (uint8_t i = 0; i < BUFFER_FRAME_SIZE; i++) {
-//                sprintf(debug_buffer, "%02X ", spi_frame_buffer[i]);
-//                HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-//            }
-//            sprintf(debug_buffer, "\r\n");
-//            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+            // --- Log odebranej ramki ---
+            sprintf(debug_buffer, "[RX] Frame received (%d bytes): ", BUFFER_FRAME_SIZE);
+            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+            for (uint8_t i = 0; i < BUFFER_FRAME_SIZE; i++) {
+                sprintf(debug_buffer, "%02X ", spi_frame_buffer[i]);
+                HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+            }
+            sprintf(debug_buffer, "\r\n");
+            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
             if (error_code == NO_ERROR)
             {
@@ -391,6 +392,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
             break;
         }
 
+    }
     }
 }
 
