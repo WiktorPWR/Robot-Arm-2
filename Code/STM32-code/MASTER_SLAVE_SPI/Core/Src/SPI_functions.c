@@ -64,6 +64,8 @@ uint8_t copying_from_buffer_normal_frame(struct message* SPI_message){
 		return WRONG_START_BYTE;
 	}
 
+	//To do: Here you need to make pcetrcion before using any new command first its need to reset
+
 	// --- Command i length ---
 	SPI_message->frame.command = rx_buf[COMMAND_POSITION];
 	SPI_message->frame.length  = rx_buf[LENGTH_POSITION];
@@ -94,6 +96,7 @@ uint8_t copying_from_buffer_normal_frame(struct message* SPI_message){
 		default:
 			return NO_SUCH_COMMAND_VALUE;
 	}
+
 
 	// --- Kopiowanie danych tylko jeśli length > 0 ---
 	if(SPI_message->frame.length > 0){
@@ -295,7 +298,9 @@ void process_received_command(struct message* SPI_message){
 			break;
 		case ACCEPT_CONFIRMATION_COMMAND:
 			SLAVE_STATE = IDLE_STATE;
-			HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
+			sprintf(debug_buffer, "\r\n[PRG] Reset command had been use\r\n");
+			HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+		    HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
 		    break;
 		default:
 			SLAVE_STATE = IDLE_STATE;
@@ -322,11 +327,12 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
     sprintf(debug_buffer, "\r\n[INT] SPI RX interrupt triggered\r\n");
     HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-    if (check_slave_address() != 1) {
+    if (check_slave_address() != 0x01) {
         sprintf(debug_buffer, "[INT] Ignored frame (wrong slave ID)\r\n");
         HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
         return;
-    }
+    }else{
+
 
     switch (SPI_state)
     {
@@ -359,15 +365,15 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
             }
             HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-            // --- Log przygotowanej ramki do wysłania ---
-            sprintf(debug_buffer, "[TX] Response to send: ");
-            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-            for (uint8_t i = 0; i < BUFFER_FRAME_SIZE; i++) {
-                sprintf(debug_buffer, "%02X ", spi_send_confirmation_buffer[i]);
-                HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-            }
-            sprintf(debug_buffer, "\r\n");
-            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//            // --- Log przygotowanej ramki do wysłania ---
+//            sprintf(debug_buffer, "[TX] Response to send: ");
+//            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//            for (uint8_t i = 0; i < BUFFER_FRAME_SIZE; i++) {
+//                sprintf(debug_buffer, "%02X ", spi_send_confirmation_buffer[i]);
+//                HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//            }
+//            sprintf(debug_buffer, "\r\n");
+//            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
             SPI_state = SENDING_CONFIRMATION;
             break;
@@ -387,10 +393,6 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
         }
 
     }
-}
-
-
-void test(){
-	return 0;
+    }
 }
 

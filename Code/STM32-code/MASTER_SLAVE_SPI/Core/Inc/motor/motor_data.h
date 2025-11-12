@@ -5,8 +5,11 @@ enum Rotation_Direction{
 
 enum Motor_State{
 	MOTOR_ENABLE,
-	MOTOR_DISABLE
+	MOTOR_DISABLE,
+	MOVEMENT_DONE
 };
+
+
 
 enum Homming_State{
 	NOT_HOMMED = 10,
@@ -27,10 +30,10 @@ enum IS_PWM_ACTIVE{
 #define ARR_VALUE 65535
 #define CLOCK_VALUE 8000000// 8 000 000
 #define DUTY_CYCLE 0.50
-
-
-
-
+//Movement values
+#define PERMITTED_POSITION_DEVIATION_VALUE 1
+#define ADDITIONAL_STEP 5
 //Hardware setup
 #define STEPS_PER_REVOLUTION 200
 #define MICROSTEPPING 16
+#define GEAR_RATIO 17
