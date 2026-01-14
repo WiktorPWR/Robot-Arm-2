@@ -1,0 +1,22 @@
+# STM32CubeIDE / IDE
+**/.settings/
+**/.project
+**/.cproject
+**/*.launch
+**/*.ioc
+
+# Build outputs
+**/Debug/
+**/Release/
+**/build/
+*.o
+*.a
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+
+# Logi / tymczasowe
+*.log
+*.tmp
