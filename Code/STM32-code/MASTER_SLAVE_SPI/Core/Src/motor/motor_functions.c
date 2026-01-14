@@ -148,9 +148,9 @@ static uint8_t is_pwm_active_ch2(void) {
  */
 void set_speed(uint16_t speed_steps_per_s)
 {
-    // --- 0. Debug info ---
-    sprintf(debug_buffer, "\r\n[set_speed] Called with speed=%u steps/s\r\n", speed_steps_per_s);
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//    // --- 0. Debug info ---
+//    sprintf(debug_buffer, "\r\n[set_speed] Called with speed=%u steps/s\r\n", speed_steps_per_s);
+//    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // --- 1. Handle case when motor should stop ---
     if (speed_steps_per_s == 0)
@@ -163,8 +163,8 @@ void set_speed(uint16_t speed_steps_per_s)
 
     // --- 2. Calculate initial ARR value (assuming prescaler = 0) ---
     uint32_t arr_value = (CLOCK_VALUE / speed_steps_per_s) - 1;
-    sprintf(debug_buffer, "[set_speed] Initial ARR (PSC=0) = %lu\r\n", arr_value);
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//    sprintf(debug_buffer, "[set_speed] Initial ARR (PSC=0) = %lu\r\n", arr_value);
+//    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // --- 3. Adjust prescaler dynamically if ARR exceeds 16-bit limit ---
     uint16_t prescaler = 0;
@@ -173,53 +173,53 @@ void set_speed(uint16_t speed_steps_per_s)
         prescaler++;
         arr_value = (CLOCK_VALUE / ((prescaler + 1) * speed_steps_per_s)) - 1;
     }
-    sprintf(debug_buffer, "[set_speed] Adjusted ARR=%lu, PSC=%u\r\n", arr_value, prescaler);
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//    sprintf(debug_buffer, "[set_speed] Adjusted ARR=%lu, PSC=%u\r\n", arr_value, prescaler);
+//    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // --- 4. Apply calculated values to timer registers ---
     htim2.Instance->PSC  = prescaler;
     htim2.Instance->ARR  = (uint16_t)arr_value;
     htim2.Instance->CCR1 = (uint16_t)(0.5f * arr_value);
 
-    sprintf(debug_buffer, "[set_speed] Timer configured -> PSC=%lu, ARR=%lu, CCR1=%lu\r\n",
-            (uint32_t)htim2.Instance->PSC,
-            (uint32_t)htim2.Instance->ARR,
-            (uint32_t)htim2.Instance->CCR1);
-
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//    sprintf(debug_buffer, "[set_speed] Timer configured -> PSC=%lu, ARR=%lu, CCR1=%lu\r\n",
+//            (uint32_t)htim2.Instance->PSC,
+//            (uint32_t)htim2.Instance->ARR,
+//            (uint32_t)htim2.Instance->CCR1);
+//
+//    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // --- 5. Check if PWM channel is active ---
     uint8_t pwm_status = is_pwm_active_ch2();
-    sprintf(debug_buffer, "[set_speed] PWM status = %d\r\n", pwm_status);
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//    sprintf(debug_buffer, "[set_speed] PWM status = %d\r\n", pwm_status);
+//    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     if (pwm_status == 5)
     {
     	HAL_StatusTypeDef pwm_status_hal = HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 
-    	sprintf(debug_buffer, "[set_speed] HAL_TIM_PWM_Start() returned: %d\r\n", pwm_status_hal);
-    	HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-    	switch (pwm_status_hal)
-    	{
-    	    case HAL_OK:
-    	        sprintf(debug_buffer, "[set_speed] PWM start -> OK\r\n");
-    	        break;
-    	    case HAL_ERROR:
-    	        sprintf(debug_buffer, "[set_speed] PWM start -> ERROR\r\n");
-    	        break;
-    	    case HAL_BUSY:
-    	        sprintf(debug_buffer, "[set_speed] PWM start -> BUSY\r\n");
-    	        break;
-    	    case HAL_TIMEOUT:
-    	        sprintf(debug_buffer, "[set_speed] PWM start -> TIMEOUT\r\n");
-    	        break;
-    	    default:
-    	        sprintf(debug_buffer, "[set_speed] PWM start -> UNKNOWN\r\n");
-    	        break;
-    	}
-
-    	HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//    	sprintf(debug_buffer, "[set_speed] HAL_TIM_PWM_Start() returned: %d\r\n", pwm_status_hal);
+//    	HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+//
+//    	switch (pwm_status_hal)
+//    	{
+//    	    case HAL_OK:
+//    	        sprintf(debug_buffer, "[set_speed] PWM start -> OK\r\n");
+//    	        break;
+//    	    case HAL_ERROR:
+//    	        sprintf(debug_buffer, "[set_speed] PWM start -> ERROR\r\n");
+//    	        break;
+//    	    case HAL_BUSY:
+//    	        sprintf(debug_buffer, "[set_speed] PWM start -> BUSY\r\n");
+//    	        break;
+//    	    case HAL_TIMEOUT:
+//    	        sprintf(debug_buffer, "[set_speed] PWM start -> TIMEOUT\r\n");
+//    	        break;
+//    	    default:
+//    	        sprintf(debug_buffer, "[set_speed] PWM start -> UNKNOWN\r\n");
+//    	        break;
+//    	}
+//
+//    	HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     }
     else
@@ -320,8 +320,6 @@ void calculating_speed_profile(float target_position){
 uint8_t move_via_angle(float angle)
 {
 	//WE HAVE GOT LITTLE ENDIAN HERE !!!!!!!!!!!!!!!!!!!!!
-    sprintf(debug_buffer, "\r\n[DEBUG] move_via_angle(%.2f)\r\n", angle);
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // Check if homing was done
     if (homming_state != HOMMED) {
@@ -331,13 +329,7 @@ uint8_t move_via_angle(float angle)
     }
 
     HAL_TIMEx_PWMN_Start(&htim2, TIM_CHANNEL_1);
-    // Check PWM state
-//    uint8_t pwm_status = is_pwm_active_ch2();
-//    if (pwm_status != PWM_ACTIVE) {
-//        sprintf(debug_buffer, "[ERROR] PWM inactive (status=%d)\r\n", pwm_status);
-//        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-//        return pwm_status;
-//    }
+
 
     // Determine rotation direction
     if (angle > actual_position)
@@ -345,14 +337,10 @@ uint8_t move_via_angle(float angle)
     else
         rotation_direction = RIGHT;
 
-    sprintf(debug_buffer, "[INFO] Rotation direction: %s\r\n",
-            (rotation_direction == LEFT) ? "LEFT" : "RIGHT");
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // Enable motor if needed
     if (motor_state == MOTOR_DISABLE) {
-        sprintf(debug_buffer, "[INFO] Enabling motor...\r\n");
-        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
         motor_enable();
     }
 
@@ -361,13 +349,6 @@ uint8_t move_via_angle(float angle)
     calculating_speed_profile(angle);
     uint32_t t1 = HAL_GetTick();
 
-
-    sprintf(debug_buffer, "[INFO] Profile calc time: %lu ms\r\n", (t1 - t0));
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-    // Execute motion
-    sprintf(debug_buffer, "[INFO] Starting motion execution...\r\n");
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     uint32_t start_time = HAL_GetTick();
     uint32_t current_time = 0;
@@ -378,9 +359,6 @@ uint8_t move_via_angle(float angle)
         while (trajectory_buffer[i].time_ms >= (current_time - start_time)) {
             if (actual_value == 0) {
                 set_speed(trajectory_buffer[i].velocity_raw);
-                //sprintf(debug_buffer, "[STEP] i=%u | v_raw=%.2f | t=%lu\r\n",
-                //        i, trajectory_buffer[i].velocity_raw, current_time - start_time);
-                //HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
                 actual_value = 1;
             }
             current_time = HAL_GetTick(); // odświeżenie czasu wewnątrz pętli!
@@ -388,8 +366,6 @@ uint8_t move_via_angle(float angle)
         actual_value = 0;
     }
 
-    sprintf(debug_buffer, "[INFO] Main motion finished. Fine positioning...\r\n");
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // Fine positioning phase (creep move)
     while (actual_position < angle + PERMITTED_POSITION_DEVIATION_VALUE &&
@@ -397,16 +373,12 @@ uint8_t move_via_angle(float angle)
         motor_step_manual();
     }
 
-    sprintf(debug_buffer, "[INFO] Backlash compensation (overshoot)...\r\n");
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     // Overshoot slightly for backlash compensation
     for (uint8_t i = 0; i < ADDITIONAL_STEP; i++) {
         motor_step_manual();
     }
 
-    sprintf(debug_buffer, "[SUCCESS] Movement done.\r\n");
-    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
     return MOVEMENT_DONE;
 }
