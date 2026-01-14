@@ -55,7 +55,7 @@ volatile enum slave_state SLAVE_STATE = IDLE_STATE;
  *         - @ref NO_SUCH_COMMAND_VALUE   if the command code is unknown
  *         - @ref WRONG_END_BYTE          if the end byte is invalid
  */
-uint8_t copying_from_buffer_normal_frame(struct message* SPI_message){
+uint8_t copying_and_cheking_from_buffer_normal_frame(struct message* SPI_message){
 	volatile uint8_t *rx_buf = spi_frame_buffer;
 
 	// --- Start byte ---
@@ -107,6 +107,15 @@ uint8_t copying_from_buffer_normal_frame(struct message* SPI_message){
 	SPI_message->frame.end_byte = rx_buf[DATA_POSITION + SPI_message->frame.length];
 	if(SPI_message->frame.end_byte != END_BYTE){
 		return WRONG_END_BYTE;
+	}
+
+
+	//Chec other values
+
+	// --- Check if slave needs reset befor using again it
+	if(SPI_message->frame.command != ACCEPT_CONFIRMATION_COMMAND || (SLAVE_END_TASK_GPIO_Port->ODR & GPIO_ODR_ODR5_Msk)){
+		//ok se return error value
+		return BEFOR_USING_ANY_NEW_COMMAND_RESET_SLAVE;
 	}
 
 	return NO_ERROR;
@@ -261,6 +270,7 @@ void clear_spi_message(struct message* SPI_message){
 }
 
 
+
 /**
  * @brief Processes a fully received SPI command message.
  *
@@ -320,6 +330,7 @@ uint8_t check_slave_address(){
 	}
 }
 
+
 //interupt called when SPI transmission is complete
 // value sending confirmation will be handled in main loop
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
@@ -330,40 +341,58 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
     if (check_slave_address() != 0x01) {
         sprintf(debug_buffer, "[INT] Ignored frame (wrong slave ID)\r\n");
         HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+
+        sprintf(debug_buffer, "[ERROR] Frame received (%d bytes): ", BUFFER_FRAME_SIZE);
+		HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+		for (uint8_t i = 0; i < BUFFER_FRAME_SIZE; i++) {
+			sprintf(debug_buffer, "%02X ", *(hspi->pRxBuffPtr+i));
+			HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+		}
+		sprintf(debug_buffer, "\r\n");
+
+		HAL_SPI_DMAStop(hspi);
+		__HAL_RCC_SPI1_FORCE_RESET();
+
+		__HAL_RCC_SPI1_RELEASE_RESET();
+
+		HAL_SPI_Init(hspi);
+		HAL_Delay(1);
+
+        HAL_SPI_Receive_DMA(hspi, spi_frame_buffer, BUFFER_FRAME_SIZE);
         return;
-    }else{
+    }
 
 
-    switch (SPI_state)
-    {
-        // ===================== CASE: MESSAGE_RECEIVED =====================
-        case MESSAGE_RECEIVED:
-        {
-            uint8_t error_code = copying_from_buffer_normal_frame(&SPI_message);
-            preparing_response_for_master(&SPI_message, error_code);
-            copying_to_buffer_confirmation_frame(&SPI_message);
+	switch (SPI_state)
+	{
+		// ===================== CASE: MESSAGE_RECEIVED =====================
+		case MESSAGE_RECEIVED:
+		{
+			uint8_t error_code = copying_and_cheking_from_buffer_normal_frame(&SPI_message);
+			preparing_response_for_master(&SPI_message, error_code);
+			copying_to_buffer_confirmation_frame(&SPI_message);
 
-            // --- Log odebranej ramki ---
-            sprintf(debug_buffer, "[RX] Frame received (%d bytes): ", BUFFER_FRAME_SIZE);
-            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-            for (uint8_t i = 0; i < BUFFER_FRAME_SIZE; i++) {
-                sprintf(debug_buffer, "%02X ", spi_frame_buffer[i]);
-                HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-            }
-            sprintf(debug_buffer, "\r\n");
-            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+			// --- Log odebranej ramki ---
+			sprintf(debug_buffer, "[RX] Frame received (%d bytes): ", BUFFER_FRAME_SIZE);
+			HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+			for (uint8_t i = 0; i < BUFFER_FRAME_SIZE; i++) {
+				sprintf(debug_buffer, "%02X ", spi_frame_buffer[i]);
+				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+			}
+			sprintf(debug_buffer, "\r\n");
+			HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-            if (error_code == NO_ERROR)
-            {
-                sprintf(debug_buffer, "[RX] Frame OK: CMD=0x%02X LEN=%d\r\n",
-                        SPI_message.frame.command, SPI_message.frame.length);
-            }
-            else
-            {
-                sprintf(debug_buffer, "[RX] Frame ERROR: CODE=%d CMD=0x%02X\r\n",
-                        error_code, SPI_message.frame.command);
-            }
-            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+			if (error_code == NO_ERROR)
+			{
+				sprintf(debug_buffer, "[RX] Frame OK: CMD=0x%02X LEN=%d\r\n",
+						SPI_message.frame.command, SPI_message.frame.length);
+			}
+			else
+			{
+				sprintf(debug_buffer, "[RX] Frame ERROR: CODE=%d CMD=0x%02X\r\n",
+						error_code, SPI_message.frame.command);
+			}
+			HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
 //            // --- Log przygotowanej ramki do wysłania ---
 //            sprintf(debug_buffer, "[TX] Response to send: ");
@@ -375,24 +404,26 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 //            sprintf(debug_buffer, "\r\n");
 //            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-            SPI_state = SENDING_CONFIRMATION;
-            break;
-        }
+			SPI_state = SENDING_CONFIRMATION;
+			break;
+		}
 
-        case CONFIRMATION_RECEIVED:
+		case CONFIRMATION_RECEIVED:
 		{
 			SPI_state = PROCES_CONFRMATION;
 			break;
 		}
-        // ===================== DEFAULT =====================
-        default:
-        {
-            sprintf(debug_buffer, "[ERR] Unknown SPI_state = %d\r\n", SPI_state);
-            HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-            break;
-        }
+		// ===================== DEFAULT =====================
+		default:
+		{
+			sprintf(debug_buffer, "[ERR] Unknown SPI_state = %d\r\n", SPI_state);
+			HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
 
-    }
-    }
+			HAL_SPI_DMAStop(hspi);
+			HAL_SPI_Receive_DMA(hspi, spi_frame_buffer, BUFFER_FRAME_SIZE);
+			break;
+		}
+
+	}
 }
 
