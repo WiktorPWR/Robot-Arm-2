@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Master</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .main-container {
+            max-width: 1200px;
+        }
+
+        .status-card {
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+        }
+
+        .status-card.active {
+            opacity: 1;
+            border-color: currentColor;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            transform: scale(1.05);
+        }
+
+        .status-card.idle-card.active {
+            border-color: #0dcaf0;
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+        }
+
+        .status-card.moving-card.active {
+            border-color: #198754;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+
+        .status-card.error-card.active {
+            border-color: #dc3545;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        }
+
+        .status-card.homing-card.active {
+            border-color: #fd7e14;
+            background: linear-gradient(135deg, #ffe5d0 0%, #ffd8b8 100%);
+        }
+
+        /* Wizualizacja ramienia */
+        .robot-arm-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .robot-arm {
+            position: relative;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .axis-segment {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            gap: 15px;
+        }
+
+        .axis-label {
+            font-weight: bold;
+            min-width: 80px;
+            font-size: 14px;
+        }
+
+        .axis-indicator {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+
+        .axis-indicator.not-homed {
+            background: #dc3545;
+            box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+        }
+
+        .axis-indicator.homing {
+            background: #0dcaf0;
+            animation: pulse 1s infinite;
+            box-shadow: 0 0 20px rgba(13, 202, 240, 0.7);
+        }
+
+        .axis-indicator.homed {
+            background: #198754;
+            box-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .arm-line {
+            width: 4px;
+            height: 30px;
+            background: linear-gradient(to bottom, #6c757d, #adb5bd);
+            margin: 0 auto;
+        }
+
+        .control-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .btn {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .waiting-indicator {
+            display: none;
+            color: #fd7e14;
+            font-weight: bold;
+            margin: 10px 0;
+            animation: blink 1s infinite;
+        }
+
+        .waiting-indicator.show {
+            display: block;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .section-title {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        input[type="number"] {
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container main-container">
+    
+    <!-- NAGŁÓWEK -->
+    <div class="text-center mb-4">
+        <h1 class="text-white mb-2">🤖 Robot Master Control Panel</h1>
+        <p class="text-white-50">Advanced 6-Axis Robotic Arm Interface</p>
+    </div>
+
+    <!-- KAFELKI STATUSU -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card status-card idle-card h-100" id="idleCard">
+                <div class="card-body text-center">
+                    <div class="display-6 mb-2">⏸️</div>
+                    <h5 class="card-title">IDLE</h5>
+                    <p class="card-text small">Robot w spoczynku</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card status-card moving-card h-100" id="movingCard">
+                <div class="card-body text-center">
+                    <div class="display-6 mb-2">▶️</div>
+                    <h5 class="card-title">MOVING</h5>
+                    <p class="card-text small">Robot w ruchu</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card status-card homing-card h-100" id="homingCard">
+                <div class="card-body text-center">
+                    <div class="display-6 mb-2">🏠</div>
+                    <h5 class="card-title">HOMING</h5>
+                    <p class="card-text small">Kalibracja osi</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card status-card error-card h-100" id="errorCard">
+                <div class="card-body text-center">
+                    <div class="display-6 mb-2">🛑</div>
+                    <h5 class="card-title">ERROR</h5>
+                    <p class="card-text small">Błąd systemu</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        
+        <!-- WIZUALIZACJA RAMIENIA -->
+        <div class="col-lg-5">
+            <div class="robot-arm-container">
+                <h4 class="section-title">📊 Status Osi</h4>
+                <div class="robot-arm">
+                    
+                    <div class="axis-segment">
+                        <span class="axis-label">Oś 6 (TCP):</span>
+                        <div class="axis-indicator not-homed" id="axis5">6</div>
+                    </div>
+                    <div class="arm-line"></div>
+                    
+                    <div class="axis-segment">
+                        <span class="axis-label">Oś 5:</span>
+                        <div class="axis-indicator not-homed" id="axis4">5</div>
+                    </div>
+                    <div class="arm-line"></div>
+                    
+                    <div class="axis-segment">
+                        <span class="axis-label">Oś 4:</span>
+                        <div class="axis-indicator not-homed" id="axis3">4</div>
+                    </div>
+                    <div class="arm-line"></div>
+                    
+                    <div class="axis-segment">
+                        <span class="axis-label">Oś 3:</span>
+                        <div class="axis-indicator not-homed" id="axis2">3</div>
+                    </div>
+                    <div class="arm-line"></div>
+                    
+                    <div class="axis-segment">
+                        <span class="axis-label">Oś 2:</span>
+                        <div class="axis-indicator not-homed" id="axis1">2</div>
+                    </div>
+                    <div class="arm-line"></div>
+                    
+                    <div class="axis-segment">
+                        <span class="axis-label">Oś 1 (Base):</span>
+                        <div class="axis-indicator not-homed" id="axis0">1</div>
+                    </div>
+                    
+                </div>
+
+                <button class="btn btn-warning w-100 mt-3" id="homeBtn" onclick="homeRobot()">
+                    🏠 WYKONAJ HOMING WSZYSTKICH OSI
+                </button>
+            </div>
+        </div>
+
+        <!-- STEROWANIE -->
+        <div class="col-lg-7">
+            <div class="control-section mb-3">
+                <h4 class="section-title">🎮 Sterowanie Manualne</h4>
+                
+                <!-- Pozycja XYZ -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Pozycja (mm):</label>
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <label class="form-label small">X:</label>
+                            <input id="x" class="form-control" type="number" step="0.1" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small">Y:</label>
+                            <input id="y" class="form-control" type="number" step="0.1" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small">Z:</label>
+                            <input id="z" class="form-control" type="number" step="0.1" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rotacja -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Rotacja (stopnie):</label>
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <label class="form-label small">RX:</label>
+                            <input id="rx" class="form-control" type="number" step="0.1" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small">RY:</label>
+                            <input id="ry" class="form-control" type="number" step="0.1" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small">RZ:</label>
+                            <input id="rz" class="form-control" type="number" step="0.1" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="waiting-indicator" id="waitingIndicator">
+                    ⏳ Waiting for moving...
+                </div>
+
+                <button class="btn btn-success w-100" onclick="moveRobot()">
+                    ▶️ WYKONAJ RUCH
+                </button>
+            </div>
+
+            <!-- TRAJEKTORIA -->
+            <div class="control-section mb-3">
+                <h4 class="section-title">📈 Trajektoria</h4>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Wgraj plik trajektorii:</label>
+                    <input type="file" class="form-control" id="trajectoryFile" accept=".json,.txt,.csv" disabled>
+                    <small class="text-muted">Format: JSON, TXT lub CSV (wkrótce dostępne)</small>
+                </div>
+                <button class="btn btn-primary w-100" disabled>
+                    📤 WGRAJ I WYKONAJ TRAJEKTORIĘ
+                </button>
+            </div>
+
+            <!-- EMERGENCY STOP -->
+            <div class="control-section">
+                <button class="btn btn-danger w-100 btn-lg" onclick="estop()">
+                    🛑 EMERGENCY STOP
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+let currentStatus = "IDLE";
+
+async function updateStatus() {
+    try {
+        const r = await fetch("/status");
+        const s = await r.json();
+
+        // Aktualizacja kafelków statusu
+        updateStatusCards(s.status);
+
+        // Aktualizacja wizualizacji osi
+        updateAxisVisualization(s.axes_homed, s.current_homing_axis);
+
+        // Aktualizacja przycisku homing
+        updateHomingButton(s.homed);
+
+        // Pokazanie "waiting for moving"
+        if (currentStatus === "MOVING" && s.status === "IDLE") {
+            document.getElementById("waitingIndicator").classList.remove("show");
+        }
+
+        currentStatus = s.status;
+
+    } catch (error) {
+        console.error("Błąd aktualizacji statusu:", error);
+    }
+}
+
+function updateStatusCards(status) {
+    // Usuń active ze wszystkich
+    document.querySelectorAll('.status-card').forEach(card => {
+        card.classList.remove('active');
+    });
+
+    // Dodaj active do odpowiedniego
+    if (status === "IDLE") {
+        document.getElementById("idleCard").classList.add("active");
+    } else if (status === "MOVING") {
+        document.getElementById("movingCard").classList.add("active");
+    } else if (status === "HOMING") {
+        document.getElementById("homingCard").classList.add("active");
+    } else if (status === "ERROR") {
+        document.getElementById("errorCard").classList.add("active");
+    }
+}
+
+function updateAxisVisualization(axesHomed, currentHomingAxis) {
+    for (let i = 0; i < 6; i++) {
+        const axisEl = document.getElementById(`axis${i}`);
+        
+        // Usuń wszystkie klasy statusu
+        axisEl.classList.remove('not-homed', 'homing', 'homed');
+        
+        // Ustaw odpowiednią klasę
+        if (currentHomingAxis === i) {
+            axisEl.classList.add('homing');
+        } else if (axesHomed[i]) {
+            axisEl.classList.add('homed');
+        } else {
+            axisEl.classList.add('not-homed');
+        }
+    }
+}
+
+function updateHomingButton(isHomed) {
+    const homeBtn = document.getElementById("homeBtn");
+    if (isHomed) {
+        homeBtn.classList.remove("btn-warning");
+        homeBtn.classList.add("btn-success");
+        homeBtn.innerHTML = "✅ WSZYSTKIE OSI SKALIBROWANE";
+    } else {
+        homeBtn.classList.remove("btn-success");
+        homeBtn.classList.add("btn-warning");
+        homeBtn.innerHTML = "🏠 WYKONAJ HOMING WSZYSTKICH OSI";
+    }
+}
+
+async function moveRobot() {
+    // Pokaż indicator oczekiwania
+    document.getElementById("waitingIndicator").classList.add("show");
+
+    await fetch("/move", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            x: parseFloat(document.getElementById("x").value),
+            y: parseFloat(document.getElementById("y").value),
+            z: parseFloat(document.getElementById("z").value),
+            rx: parseFloat(document.getElementById("rx").value),
+            ry: parseFloat(document.getElementById("ry").value),
+            rz: parseFloat(document.getElementById("rz").value)
+        })
+    });
+}
+
+async function homeRobot() {
+    await fetch("/home", {method: "POST"});
+}
+
+async function estop() {
+    document.getElementById("waitingIndicator").classList.remove("show");
+    await fetch("/estop", {method: "POST"});
+}
+
+// Aktualizuj status co 200ms (szybciej dla płynniejszej animacji)
+setInterval(updateStatus, 200);
+updateStatus();
+</script>
+
+</body>
+</html>
