@@ -62,11 +62,13 @@ static void MX_SPI1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
+/* USER CODE BEGIN PFP */
 #define HANDSHAKE_SIZE 1
-#define HEADER_SIZE 7
+#define FRAME_INFORMATION_FOR_ECHO 5 //this is suppoused to be start_byte+command+slave_id+frame_id+end_byte
 #define DATA_SIZE   16
 
 #define START_BYTE 0x55
+#define SLAVE_ID  0x01
 #define END_BYTE 0xAA
 #define SYN_BYTE 0x97
 #define SYN_ACK_BYTE 0x98
@@ -74,14 +76,16 @@ static void MX_TIM1_Init(void);
 
 // --- Struktura nagłówka ---
 typedef struct {
-    uint8_t start_byte;    // rx_header[0]
-    uint8_t length;        // rx_header[1]
+    uint8_t start_byte;
+    uint8_t length;
     uint8_t slave_id;
     uint8_t frame_id;
-    uint8_t command;       // rx_header[2]
-    uint8_t data_size;     // rx_header[3]
-    uint8_t end_byte;      // rx_header[4]
+    uint8_t command;
+    uint8_t data_size;
+    uint8_t end_byte;
 } Header_t;
+
+#define HEADER_SIZE (sizeof(Header_t))
 
 //communication buffers
 uint8_t rx_handshake;
@@ -89,7 +93,7 @@ Header_t rx_header;  // Teraz jako struktura!
 uint8_t rx_data[DATA_SIZE];
 uint8_t rx_commit;
 uint8_t tx_handshake;
-uint8_t tx_buf[DATA_SIZE + 5]; // echo = cmd+data+frame_id+slave_id+end
+uint8_t tx_buf[DATA_SIZE + FRAME_INFORMATION_FOR_ECHO]; //this is suppoused to be start_byte+command+slave_id+frame_id+end_byte
 
 //action buffer
 uint8_t data_frame[HEADER_SIZE + DATA_SIZE];
@@ -100,12 +104,16 @@ typedef enum {
     SEND_SYN_ACK,
     WAIT_ACK,
     WAIT_HEADER,
+    SEND_VALIDATION_CODE,  // ← NOWY STAN po odebraniu headera
     WAIT_DATA,
     SEND_ECHO,
     WAIT_COMMIT
 } SPI_ProcessStage;
 
 volatile SPI_ProcessStage process_stage = WAIT_SYN;
+
+// Bufor na kod walidacji (1 bajt)
+uint8_t tx_validation_code;
 
 
 // --- Funkcje pomocnicze ---
@@ -118,9 +126,12 @@ void send_spi_dma(uint8_t* buffer, uint16_t size){
 }
 
 void prepare_echo(){
-    tx_buf[0] = rx_header.command;           // Było: rx_header[2]
-    memcpy(&tx_buf[1], rx_data, rx_header.data_size); // Było: rx_header[3]
-    tx_buf[rx_header.data_size + 1] = rx_header.end_byte; // Było: rx_header[4]
+    tx_buf[0] = rx_header.start_byte;      // START_BYTE
+    tx_buf[1] = rx_header.command;         // command
+    tx_buf[2] = rx_header.slave_id;        // slave_id
+    tx_buf[3] = rx_header.frame_id;        // frame_id
+    memcpy(&tx_buf[4], rx_data, rx_header.data_size); // data
+    tx_buf[4 + rx_header.data_size] = rx_header.end_byte; // END_BYTE
 }
 
 
@@ -144,6 +155,44 @@ void copy_and_clear_communication_buffors(){
     clear_communication_buffors();
 }
 
+typedef enum{
+	OK = 1,
+	WRONG_START_BYTE,
+	WRONG_SLAVE_ID,
+	WRONG_COMMAND,
+	WRONG_DATA_SIZE,
+	WRONG_END_BYTE
+}Frame_Errors;
+
+Frame_Errors frame_errors;
+
+typedef enum{
+	HOMMING = 100,
+	MOVE_VIA_ANGLE,
+	DIAGNOSTIC
+}Commands;
+
+
+//This function return value if its ends with no problme or there is somthing
+Frame_Errors header_validation(){
+	if(rx_header.start_byte != START_BYTE){
+		return WRONG_START_BYTE;
+	}
+	if(rx_header.slave_id != SLAVE_ID){
+		return WRONG_SLAVE_ID;
+	}
+	if(rx_header.command > DIAGNOSTIC || rx_header.command < HOMMING){
+		return WRONG_COMMAND;
+	}
+	if(rx_header.data_size > DATA_SIZE){
+		return WRONG_DATA_SIZE;
+	}
+	if(rx_header.end_byte != END_BYTE){
+		return WRONG_END_BYTE;
+	}
+
+	return OK;
+}
 
 typedef enum{
     START,
@@ -161,17 +210,14 @@ void timer_reset(){
 
 // --- EXTI Callback (CS pin) ---
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-    if(GPIO_Pin != GPIO_PIN_7) return;
+    if(GPIO_Pin != GPIO_PIN_4) return;
 
     if (timer_state == START) {
         HAL_TIM_Base_Start_IT(&htim1);
         timer_state = RUNNING;
     }
 
-    // 1. ZAWSZE zatrzymaj SPI/DMA przed konfiguracją nowego kroku
     HAL_SPI_DMAStop(&hspi1);
-
-    // 2. Opcjonalnie wyczyść flagi (ważne przy szybkich transferach)
     __HAL_SPI_CLEAR_OVRFLAG(&hspi1);
 
     switch(process_stage){
@@ -188,15 +234,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
             break;
 
         case WAIT_HEADER:
-            start_spi_dma_receive((uint8_t*)&rx_header, HEADER_SIZE);  // Cast do uint8_t*
+            start_spi_dma_receive((uint8_t*)&rx_header, HEADER_SIZE);
+            break;
+
+        case SEND_VALIDATION_CODE:  // ← Wyślij kod walidacji headera
+            send_spi_dma(&tx_validation_code, 1);
             break;
 
         case WAIT_DATA:
-            start_spi_dma_receive(rx_data, rx_header.data_size);  // Było: rx_header[3]
+            start_spi_dma_receive(rx_data, rx_header.data_size);
             break;
 
         case SEND_ECHO:
-            send_spi_dma(tx_buf, rx_header.data_size + 2);  // Było: rx_header[3]+2//startbyte+endbyte+slave_id+frame_id+data
+            send_spi_dma(tx_buf, rx_header.data_size + FRAME_INFORMATION_FOR_ECHO);
             break;
 
         case WAIT_COMMIT:
@@ -226,7 +276,11 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi){
             break;
 
         case WAIT_HEADER:
-            process_stage = WAIT_DATA;
+            // Waliduj header i zapisz kod do wysłania
+            frame_errors = header_validation();
+            tx_validation_code = (uint8_t)frame_errors;
+
+            process_stage = SEND_VALIDATION_CODE;
             break;
 
         case WAIT_DATA:
@@ -235,7 +289,6 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi){
             break;
 
         case WAIT_COMMIT:
-            //Set a flag that you can do something
             process_stage = WAIT_SYN;
             timer_state = START;
             copy_and_clear_communication_buffors();
@@ -252,6 +305,18 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
 
     if(process_stage == SEND_SYN_ACK){
         process_stage = WAIT_ACK;
+    }
+    else if(process_stage == SEND_VALIDATION_CODE){
+        // Po wysłaniu kodu walidacji:
+        if(frame_errors == OK){
+            // OK - kontynuuj odbieranie danych
+            process_stage = WAIT_DATA;
+        } else {
+            // BŁĄD - przerwij komunikację, wróć do początku
+            clear_communication_buffors();
+            process_stage = WAIT_SYN;
+            timer_state = START;
+        }
     }
     else if(process_stage == SEND_ECHO){
         process_stage = WAIT_COMMIT;
