@@ -30,14 +30,16 @@ END_BYTE = 0xAA
 SYN_BYTE = 0x97
 SYN_ACK_BYTE = 0x98
 ACK_BYTE = 0x99
+COMMIT_BYTE = 0x11  # Przykładowa wartość commit
 
 # Kody walidacji
 VALIDATION_OK = 0x01
 WRONG_START_BYTE = 0x02
-WRONG_SLAVE_ID = 0x03
-WRONG_COMMAND = 0x04
-WRONG_DATA_SIZE = 0x05
-WRONG_END_BYTE = 0x06
+WRONG_FRAME_ID = 0x03
+WRONG_SLAVE_ID = 0x04
+WRONG_COMMAND = 0x05
+WRONG_DATA_SIZE = 0x06
+WRONG_END_BYTE = 0x07
 
 # Komendy (100-102)
 CMD_HOMING = 100
@@ -46,7 +48,7 @@ CMD_DIAGNOSTIC = 102
 
 # Limity
 MAX_DATA_SIZE = 16
-HEADER_SIZE = 7
+HEADER_SIZE = 6  # start_byte, slave_id, frame_id, command, data_size, end_byte
 
 # Timing
 DELAY_BETWEEN_STEPS = 0.005
@@ -159,10 +161,8 @@ def send_receive_cs(data, comm_log=None, step_name=""):
 def build_header(command, data_size, frame_id=0x01, 
                  start_byte=START_BYTE, slave_id=SLAVE_ID, end_byte=END_BYTE):
     """Buduje header - z opcją nadpisania wartości (do testów błędów)."""
-    length = HEADER_SIZE + data_size
     return [
         start_byte,
-        length,
         slave_id,
         frame_id,
         command,
@@ -170,11 +170,16 @@ def build_header(command, data_size, frame_id=0x01,
         end_byte
     ]
 
+def build_commit_frame(commit_value=COMMIT_BYTE):
+    """Buduje 3-bajtową ramkę COMMIT: START_BYTE + commit + END_BYTE"""
+    return [START_BYTE, commit_value, END_BYTE]
+
 def get_validation_name(code):
     """Zwraca nazwę kodu walidacji."""
     names = {
         VALIDATION_OK: "OK",
         WRONG_START_BYTE: "WRONG_START_BYTE",
+        WRONG_FRAME_ID: "WRONG_FRAME_ID",
         WRONG_SLAVE_ID: "WRONG_SLAVE_ID",
         WRONG_COMMAND: "WRONG_COMMAND",
         WRONG_DATA_SIZE: "WRONG_DATA_SIZE",
@@ -221,7 +226,7 @@ def test_valid_protocol(test_name, command, payload, frame_id=0x01,
                         expected_success=True, category="Valid Protocol",
                         verify_echo_data=False):
     """
-    Testuje poprawny przebieg protokołu.
+    Testuje poprawny przebieg protokołu z 3-bajtowym COMMIT.
     Zwraca True jeśli test przeszedł zgodnie z oczekiwaniami.
     
     verify_echo_data: jeśli True, weryfikuje że dane w ECHO są identyczne z wysłanymi
@@ -283,7 +288,7 @@ def test_valid_protocol(test_name, command, payload, frame_id=0x01,
             time.sleep(DELAY_BETWEEN_STEPS)
             
             # 7. ECHO
-            echo_size = 1 + 1 + 1 + 1 + data_size + 1
+            echo_size = 1 + 1 + 1 + 1 + data_size + 1  # start + cmd + slave + frame + data + end
             print(f"← ECHO ({echo_size}B)")
             
             echo_resp = send_receive_cs([0x00] * echo_size, comm_log, "7. ECHO (odbieranie)")
@@ -350,9 +355,10 @@ def test_valid_protocol(test_name, command, payload, frame_id=0x01,
             
             time.sleep(DELAY_BETWEEN_STEPS)
             
-            # 8. COMMIT
-            print("→ COMMIT")
-            send_receive_cs([0x11], comm_log, "8. COMMIT")
+            # 8. COMMIT - teraz 3 bajty!
+            commit_frame = build_commit_frame()
+            print(f"→ COMMIT: {[f'0x{b:02X}' for b in commit_frame]}")
+            send_receive_cs(commit_frame, comm_log, "8. COMMIT (3 bajty)")
             
             print("✅ Test PASSED")
             test_passed = True
@@ -842,10 +848,6 @@ def run_all_tests():
     print("🔍 KATEGORIA 5: WALIDACJA HEADERA - DATA_SIZE")
     print("═"*70)
     
-    # Uwaga: test_invalid_header buduje header z len(payload), 
-    # ale możemy nadpisać data_size w headerze ręcznie
-    # Zmodyfikujmy funkcję testową
-    
     def test_invalid_data_size(test_name, declared_size, actual_payload):
         """Test z niezgodnym data_size w headerze."""
         try:
@@ -864,8 +866,7 @@ def run_all_tests():
             time.sleep(DELAY_BETWEEN_STEPS)
             
             # BŁĘDNY HEADER (data_size > MAX lub niezgodny)
-            length = HEADER_SIZE + declared_size
-            header = [START_BYTE, length, SLAVE_ID, 0x01, CMD_HOMING, declared_size, END_BYTE]
+            header = [START_BYTE, SLAVE_ID, 0x01, CMD_HOMING, declared_size, END_BYTE]
             print(f"→ HEADER (data_size={declared_size}): {[f'0x{b:02X}' for b in header]}")
             send_receive_cs(header)
             time.sleep(DELAY_BETWEEN_STEPS)
