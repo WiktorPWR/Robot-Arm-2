@@ -31,8 +31,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <data_templates.h>
-#include  "motor/motor_functions.h"
+//#include <data_templates.h>
+//#include  "motor/motor_functions.h"
 #include "string.h"
 #include "stdio.h"
 #include "stdint.h"
@@ -69,16 +69,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define PULL_PWM_Pin GPIO_PIN_0
 #define PULL_PWM_GPIO_Port GPIOA
-#define ENDSTOP_Pin GPIO_PIN_9
-#define ENDSTOP_GPIO_Port GPIOA
-#define DIR_Pin GPIO_PIN_10
-#define DIR_GPIO_Port GPIOA
-#define PULL_MANUAL_Pin GPIO_PIN_11
-#define PULL_MANUAL_GPIO_Port GPIOA
-#define ENABLE_Pin GPIO_PIN_12
-#define ENABLE_GPIO_Port GPIOA
-#define SLAVE_END_TASK_Pin GPIO_PIN_6
-#define SLAVE_END_TASK_GPIO_Port GPIOB
+#define READY_SLAVE_FLAG_Pin GPIO_PIN_6
+#define READY_SLAVE_FLAG_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

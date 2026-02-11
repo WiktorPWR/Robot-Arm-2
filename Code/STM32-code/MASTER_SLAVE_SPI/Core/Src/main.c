@@ -22,9 +22,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include "SPI_functions.h"
+//#include "SPI_functions.h"
 #include <stdio.h>
 #include <string.h>
+#include "protocol/spi_slave_protocol.h"
+#include "spi_slave_registers.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,90 +45,30 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+CRC_HandleTypeDef hcrc;
+
 SPI_HandleTypeDef hspi1;
+DMA_HandleTypeDef hdma_spi1_tx;
 DMA_HandleTypeDef hdma_spi1_rx;
 
+TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
-
-UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
-
+//Small
+//Make
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
-static void MX_USART2_UART_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_TIM1_Init(void);
+static void MX_CRC_Init(void);
 /* USER CODE BEGIN PFP */
 
-
-
-// TO DO:
-//You must change this immediately
-
-void restart_spi(){
-
-	HAL_SPI_DMAStop(&hspi1);
-    __HAL_RCC_SPI1_FORCE_RESET();
-
-    __HAL_RCC_SPI1_RELEASE_RESET();
-
-    HAL_SPI_Init(&hspi1);
-    HAL_Delay(1);
-
-    HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
-}
-
-void restart_spi_2() {
-
-	HAL_SPI_DMAStop(&hspi1);
-	__HAL_RCC_SPI1_FORCE_RESET();
-
-	__HAL_RCC_SPI1_RELEASE_RESET();
-
-	HAL_SPI_Init(&hspi1);
-	HAL_Delay(1);
-
-    // Restart odbioru DMA
-    HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer, BUFFER_FRAME_SIZE);
-}
-
-void handle_slave_state(uint8_t state) {
-
-    switch(state) {
-		case HOMMING_STATE:
-			homming();
-			//perform_homing();
-			break;
-		case MOVING_STATE:
-			float angle = 0;
-			memcpy(&angle,SPI_message.frame.data,sizeof(float));
-			move_via_angle(angle);
-			//perform_movement();
-			break;
-		case STOP_STATE:
-			//perform_stop();
-			break;
-		case SENDING_STATE:
-			//send_status();
-			break;
-		case CHAGING_MOVEMENT_VALUES_STATE:
-			//change_movement_values();
-			break;
-		case DIAGNOSTIC_STATE:
-			//perform_diagnostics();
-			break;
-		default:
-			// Handle unknown state if necessary
-			break;
-	}
-    clear_spi_message(&SPI_message);
-
-}
 
 
 /* USER CODE END PFP */
@@ -167,148 +109,18 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_SPI1_Init();
-  MX_USART2_UART_Init();
   MX_TIM2_Init();
+  MX_TIM1_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-
-  char debug_buffer[248];
-
-
-  HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
-  HAL_SPI_Receive_DMA(&hspi1, spi_frame_buffer,BUFFER_FRAME_SIZE);
-  sprintf(debug_buffer, "SPI START \r\n");
-  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
+  HAL_GPIO_WritePin(READY_SLAVE_FLAG_GPIO_Port, READY_SLAVE_FLAG_Pin,GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
   while (1)
   {
-	  switch(SPI_state){
-		  case SENDING_CONFIRMATION:
-		  {
-			  SPI_state = CONFIRMATION_RECEIVED;
-			  // Przygotuj bufor do wysyłki (jeśli nie został wcześniej przygotowany)
-			  // copying_to_buffer_confirmation_frame(&SPI_message);
-
-			  // Ile bajtów wysyłamy: start + slave_id + command + length + dane + end_byte
-			  uint8_t bytes_to_send = 4 + SPI_message.send_confirm.length + 1; // 4: start+slave+cmd+length, +1: end_byte
-
-			  // === DEBUG: Wypisz informację o stanie i ilości bajtów ===
-			  sprintf(debug_buffer, "[TX] Sending confirmation frame (%d bytes)\r\n", bytes_to_send);
-			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-			  // === DEBUG: Wypisz zawartość ramki ===
-			  sprintf(debug_buffer, "[TX] Frame data: ");
-			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-			  for (uint8_t i = 0; i < bytes_to_send; i++) {
-				  sprintf(debug_buffer, "%02X ", spi_send_confirmation_buffer[i]);
-				  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-			  }
-			  sprintf(debug_buffer, "\r\n");
-			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-			  //HAL_SPI_DMAStop(&hspi1);
-			  //HAL_SPI_Receive_DMA(&hspi1, spi_receive_confirmation_buffer, BUFFER_RECEIVE_CONFIRMATION_SIZE);
-			  // === Transmisja ramki do mastera ===
-			  HAL_SPI_Transmit(&hspi1, spi_send_confirmation_buffer, bytes_to_send, 200);
-
-			  restart_spi();
-			  // === DEBUG: Potwierdzenie zakończenia transmisji ===
-			  sprintf(debug_buffer, "[TX] Confirmation frame sent, waiting for ACK...\r\n");
-			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-
-			  // === DEBUG: Potwierdzenie przejścia do kolejnego stanu ===
-			  sprintf(debug_buffer, "[STATE] -> CONFIRMATION_RECEIVED\r\n");
-			  HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-			  //SPI_state = CONFIRMATION_RECEIVED;
-			  break;
-		  }
-
-	  	  case PROCES_CONFRMATION:
-	  		    SPI_state = MESSAGE_RECEIVED;
-				sprintf(debug_buffer, "[RX] Confirmation frame received: \r\n");
-				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-				uint8_t error_code = copying_from_buffer_confirmation_frame(&SPI_message);
-				// Wypisanie otrzymanego kodu błędu
-				sprintf(debug_buffer, "[RX] Confirmation parse result: error_code = %d\r\n", error_code);
-				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-
-				for (uint8_t i = 0; i < BUFFER_RECEIVE_CONFIRMATION_SIZE; i++) {
-					sprintf(debug_buffer, "%02X ", spi_receive_confirmation_buffer[i]);
-					HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-					HAL_Delay(1);//DEBBUGING
-				}
-
-
-				for (uint8_t i = 0; i < BUFFER_RECEIVE_CONFIRMATION_SIZE; i++) {
-				    // Zbuduj tekst dla bieżącego bajtu
-				    sprintf(debug_buffer, "%02X ", spi_receive_confirmation_buffer[i]);
-				    HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), 50);
-				}
-
-				sprintf(debug_buffer, "--END--\r\n");
-				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-				sprintf(debug_buffer, "[RX] SPI RESET\r\n");
-				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-				restart_spi_2();
-
-				// Sprawdzenie, czy potwierdzenie zostało zaakceptowane
-				sprintf(debug_buffer, "[RX] Acknowledge flag value: %d\r\n", SPI_message.acknowledge_confirmation);
-				HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-				SPI_state = MESSAGE_RECEIVED;
-
-				if (SPI_message.acknowledge_confirmation) {
-				        sprintf(debug_buffer, "[STATE] ACK received -> Executing process_received_command()\r\n");
-				        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-				        process_received_command(&SPI_message);
-
-				        // Reset acknowledgment flag
-				        SPI_message.acknowledge_confirmation = 0;
-
-				        sprintf(debug_buffer, "[STATE] Command processed, ACK flag cleared\r\n");
-				        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-				    } else {
-				        sprintf(debug_buffer, "[STATE] NACK received -> Skipping command processing\r\n");
-				        HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-				        // Można dodać więcej logiki np. retransmisję
-				    }
-		  break;
-
-	  }
-	  switch(SLAVE_STATE) {
-	      case IDLE_STATE:
-	          break;
-	      case HOMMING_STATE:
-	      case MANUAL_CONTROL_STATE:
-	      case MOVING_STATE:
-	      case STOP_STATE:
-	      case SENDING_STATE:
-	      case ERROR_STATE:
-	      case CHAGING_MOVEMENT_VALUES_STATE:
-	      case DIAGNOSTIC_STATE:
-	          handle_slave_state(SLAVE_STATE);
-	          sprintf(debug_buffer, "[STATE] WE SET PIN IN HIGH\r\n");
-	          HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-
-	          HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_SET);
-//	          sprintf(debug_buffer, "[STATE] WE SET PIN IN LOW\r\n");
-//	          HAL_UART_Transmit(&huart2, (uint8_t*)debug_buffer, strlen(debug_buffer), HAL_MAX_DELAY);
-	          break;
-	  }
-	  SLAVE_STATE = IDLE_STATE;
-
+	  monitor_register_changes();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -353,6 +165,32 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief CRC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CRC_Init(void)
+{
+
+  /* USER CODE BEGIN CRC_Init 0 */
+
+  /* USER CODE END CRC_Init 0 */
+
+  /* USER CODE BEGIN CRC_Init 1 */
+
+  /* USER CODE END CRC_Init 1 */
+  hcrc.Instance = CRC;
+  if (HAL_CRC_Init(&hcrc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CRC_Init 2 */
+
+  /* USER CODE END CRC_Init 2 */
+
+}
+
+/**
   * @brief SPI1 Initialization Function
   * @param None
   * @retval None
@@ -374,7 +212,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_HARD_INPUT;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -386,6 +224,56 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 31;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 49999;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_OnePulse_Init(&htim1, TIM_OPMODE_SINGLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
 
 }
 
@@ -449,39 +337,6 @@ static void MX_TIM2_Init(void)
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART2_Init 0 */
-
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-
-  /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 57600;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
-
-  /* USER CODE END USART2_Init 2 */
-
-}
-
-/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -494,6 +349,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+  /* DMA1_Channel3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
 
 }
 
@@ -515,30 +373,24 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, DIR_Pin|PULL_MANUAL_Pin|ENABLE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(READY_SLAVE_FLAG_GPIO_Port, READY_SLAVE_FLAG_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : ENDSTOP_Pin */
-  GPIO_InitStruct.Pin = ENDSTOP_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(ENDSTOP_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : DIR_Pin PULL_MANUAL_Pin ENABLE_Pin */
-  GPIO_InitStruct.Pin = DIR_Pin|PULL_MANUAL_Pin|ENABLE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : SLAVE_END_TASK_Pin */
-  GPIO_InitStruct.Pin = SLAVE_END_TASK_Pin;
+  /*Configure GPIO pin : READY_SLAVE_FLAG_Pin */
+  GPIO_InitStruct.Pin = READY_SLAVE_FLAG_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(SLAVE_END_TASK_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(READY_SLAVE_FLAG_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
