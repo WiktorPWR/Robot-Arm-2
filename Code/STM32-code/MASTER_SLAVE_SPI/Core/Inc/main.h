@@ -69,8 +69,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define PULL_PWM_Pin GPIO_PIN_0
 #define PULL_PWM_GPIO_Port GPIOA
-#define SLAVE_END_TASK_Pin GPIO_PIN_6
-#define SLAVE_END_TASK_GPIO_Port GPIOB
+#define READY_SLAVE_FLAG_Pin GPIO_PIN_6
+#define READY_SLAVE_FLAG_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

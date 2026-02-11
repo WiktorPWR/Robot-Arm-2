@@ -25,6 +25,8 @@
 //#include "SPI_functions.h"
 #include <stdio.h>
 #include <string.h>
+#include "protocol/spi_slave_protocol.h"
+#include "spi_slave_registers.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,6 +45,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+CRC_HandleTypeDef hcrc;
+
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
 DMA_HandleTypeDef hdma_spi1_rx;
@@ -61,280 +65,8 @@ static void MX_DMA_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_CRC_Init(void);
 /* USER CODE BEGIN PFP */
-/* USER CODE BEGIN PFP */
-#define HANDSHAKE_SIZE 1
-#define FRAME_INFORMATION_FOR_ECHO 5 //this is suppoused to be start_byte+command+slave_id+frame_id+end_byte
-#define DATA_SIZE   16
-
-#define START_BYTE 0x55
-#define SLAVE_ID  0x01
-#define END_BYTE 0xAA
-#define SYN_BYTE 0x97
-#define SYN_ACK_BYTE 0x98
-#define ACK_BYTE 0x99
-
-// --- Struktura nagłówka ---
-typedef struct {
-    uint8_t start_byte;
-    uint8_t length;
-    uint8_t slave_id;
-    uint8_t frame_id;
-    uint8_t command;
-    uint8_t data_size;
-    uint8_t end_byte;
-} Header_t;
-
-#define HEADER_SIZE (sizeof(Header_t))
-
-//communication buffers
-uint8_t rx_handshake;
-Header_t rx_header;  // Teraz jako struktura!
-uint8_t rx_data[DATA_SIZE];
-uint8_t rx_commit;
-uint8_t tx_handshake;
-uint8_t tx_buf[DATA_SIZE + FRAME_INFORMATION_FOR_ECHO]; //this is suppoused to be start_byte+command+slave_id+frame_id+end_byte
-
-//action buffer
-uint8_t data_frame[HEADER_SIZE + DATA_SIZE];
-
-// --- Stany ---
-typedef enum {
-    WAIT_SYN,
-    SEND_SYN_ACK,
-    WAIT_ACK,
-    WAIT_HEADER,
-    SEND_VALIDATION_CODE,  // ← NOWY STAN po odebraniu headera
-    WAIT_DATA,
-    SEND_ECHO,
-    WAIT_COMMIT
-} SPI_ProcessStage;
-
-volatile SPI_ProcessStage process_stage = WAIT_SYN;
-
-// Bufor na kod walidacji (1 bajt)
-uint8_t tx_validation_code;
-
-
-// --- Funkcje pomocnicze ---
-void start_spi_dma_receive(uint8_t* buffer, uint16_t size){
-    HAL_SPI_Receive_DMA(&hspi1, buffer, size);
-}
-
-void send_spi_dma(uint8_t* buffer, uint16_t size){
-    HAL_SPI_Transmit_DMA(&hspi1, buffer, size);
-}
-
-void prepare_echo(){
-    tx_buf[0] = rx_header.start_byte;      // START_BYTE
-    tx_buf[1] = rx_header.command;         // command
-    tx_buf[2] = rx_header.slave_id;        // slave_id
-    tx_buf[3] = rx_header.frame_id;        // frame_id
-    memcpy(&tx_buf[4], rx_data, rx_header.data_size); // data
-    tx_buf[4 + rx_header.data_size] = rx_header.end_byte; // END_BYTE
-}
-
-
-void clear_communication_buffors(){
-    //Reset all values to default
-    rx_handshake = 0;
-    memset(&rx_header, 0, sizeof(rx_header));  // Wyzeruj całą strukturę
-    memset(rx_data, 0, sizeof(rx_data));
-
-    tx_handshake = 0;
-    memset(tx_buf, 0, sizeof(tx_buf));
-
-    rx_commit = 0;
-}
-
-void copy_and_clear_communication_buffors(){
-    //first do some copying data
-    memcpy(data_frame, &rx_header, HEADER_SIZE);  // Kopiuj strukturę jako bajty
-    memcpy(&data_frame[HEADER_SIZE], rx_data, DATA_SIZE);
-
-    clear_communication_buffors();
-}
-
-typedef enum{
-	OK = 1,
-	WRONG_START_BYTE,
-	WRONG_SLAVE_ID,
-	WRONG_COMMAND,
-	WRONG_DATA_SIZE,
-	WRONG_END_BYTE
-}Frame_Errors;
-
-Frame_Errors frame_errors;
-
-typedef enum{
-	HOMMING = 100,
-	MOVE_VIA_ANGLE,
-	DIAGNOSTIC
-}Commands;
-
-
-//This function return value if its ends with no problme or there is somthing
-Frame_Errors header_validation(){
-	if(rx_header.start_byte != START_BYTE){
-		return WRONG_START_BYTE;
-	}
-	if(rx_header.slave_id != SLAVE_ID){
-		return WRONG_SLAVE_ID;
-	}
-	if(rx_header.command > DIAGNOSTIC || rx_header.command < HOMMING){
-		return WRONG_COMMAND;
-	}
-	if(rx_header.data_size > DATA_SIZE){
-		return WRONG_DATA_SIZE;
-	}
-	if(rx_header.end_byte != END_BYTE){
-		return WRONG_END_BYTE;
-	}
-
-	return OK;
-}
-
-typedef enum{
-    START,
-    RUNNING,
-    STOP
-}Timer_State;
-
-Timer_State timer_state = START;
-
-void timer_reset(){
-    HAL_TIM_Base_Stop_IT(&htim1);
-    __HAL_TIM_SET_COUNTER(&htim1, 0);
-    timer_state = START;
-}
-
-// --- EXTI Callback (CS pin) ---
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-    if(GPIO_Pin != GPIO_PIN_4) return;
-
-    if (timer_state == START) {
-        HAL_TIM_Base_Start_IT(&htim1);
-        timer_state = RUNNING;
-    }
-
-    HAL_SPI_DMAStop(&hspi1);
-    __HAL_SPI_CLEAR_OVRFLAG(&hspi1);
-
-    switch(process_stage){
-        case WAIT_SYN:
-            start_spi_dma_receive(&rx_handshake, 1);
-            break;
-
-        case SEND_SYN_ACK:
-            send_spi_dma(&tx_handshake, 1);
-            break;
-
-        case WAIT_ACK:
-            start_spi_dma_receive(&rx_handshake, 1);
-            break;
-
-        case WAIT_HEADER:
-            start_spi_dma_receive((uint8_t*)&rx_header, HEADER_SIZE);
-            break;
-
-        case SEND_VALIDATION_CODE:  // ← Wyślij kod walidacji headera
-            send_spi_dma(&tx_validation_code, 1);
-            break;
-
-        case WAIT_DATA:
-            start_spi_dma_receive(rx_data, rx_header.data_size);
-            break;
-
-        case SEND_ECHO:
-            send_spi_dma(tx_buf, rx_header.data_size + FRAME_INFORMATION_FOR_ECHO);
-            break;
-
-        case WAIT_COMMIT:
-            start_spi_dma_receive(&rx_commit, 1);
-            break;
-    }
-}
-
-
-
-// --- DMA RX Complete ---
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi){
-    if(hspi != &hspi1) return;
-
-    __HAL_SPI_CLEAR_OVRFLAG(hspi);
-
-    switch(process_stage){
-        case WAIT_SYN:
-            if(rx_handshake == SYN_BYTE){
-                tx_handshake = SYN_ACK_BYTE;
-                process_stage = SEND_SYN_ACK;
-            }
-            break;
-
-        case WAIT_ACK:
-            process_stage = WAIT_HEADER;
-            break;
-
-        case WAIT_HEADER:
-            // Waliduj header i zapisz kod do wysłania
-            frame_errors = header_validation();
-            tx_validation_code = (uint8_t)frame_errors;
-
-            process_stage = SEND_VALIDATION_CODE;
-            break;
-
-        case WAIT_DATA:
-            prepare_echo();
-            process_stage = SEND_ECHO;
-            break;
-
-        case WAIT_COMMIT:
-            process_stage = WAIT_SYN;
-            timer_state = START;
-            copy_and_clear_communication_buffors();
-            break;
-    }
-
-    timer_reset();
-}
-
-
-
-void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
-    if(hspi != &hspi1) return;
-
-    if(process_stage == SEND_SYN_ACK){
-        process_stage = WAIT_ACK;
-    }
-    else if(process_stage == SEND_VALIDATION_CODE){
-        // Po wysłaniu kodu walidacji:
-        if(frame_errors == OK){
-            // OK - kontynuuj odbieranie danych
-            process_stage = WAIT_DATA;
-        } else {
-            // BŁĄD - przerwij komunikację, wróć do początku
-            clear_communication_buffors();
-            process_stage = WAIT_SYN;
-            timer_state = START;
-        }
-    }
-    else if(process_stage == SEND_ECHO){
-        process_stage = WAIT_COMMIT;
-    }
-}
-
-
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
-    if(htim == &htim1){
-        //we need to clear before doing anything
-        clear_communication_buffors();
-        //change status of course
-        process_stage = WAIT_SYN;
-        timer_state = START;
-    }
-}
-
-
 
 
 
@@ -378,15 +110,16 @@ int main(void)
   MX_SPI1_Init();
   MX_TIM2_Init();
   MX_TIM1_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_GPIO_WritePin(READY_SLAVE_FLAG_GPIO_Port, READY_SLAVE_FLAG_Pin,GPIO_PIN_RESET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+	  monitor_register_changes();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -428,6 +161,32 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief CRC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CRC_Init(void)
+{
+
+  /* USER CODE BEGIN CRC_Init 0 */
+
+  /* USER CODE END CRC_Init 0 */
+
+  /* USER CODE BEGIN CRC_Init 1 */
+
+  /* USER CODE END CRC_Init 1 */
+  hcrc.Instance = CRC;
+  if (HAL_CRC_Init(&hcrc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CRC_Init 2 */
+
+  /* USER CODE END CRC_Init 2 */
+
 }
 
 /**
@@ -613,14 +372,14 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SLAVE_END_TASK_GPIO_Port, SLAVE_END_TASK_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(READY_SLAVE_FLAG_GPIO_Port, READY_SLAVE_FLAG_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : SLAVE_END_TASK_Pin */
-  GPIO_InitStruct.Pin = SLAVE_END_TASK_Pin;
+  /*Configure GPIO pin : READY_SLAVE_FLAG_Pin */
+  GPIO_InitStruct.Pin = READY_SLAVE_FLAG_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(SLAVE_END_TASK_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(READY_SLAVE_FLAG_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PB7 */
   GPIO_InitStruct.Pin = GPIO_PIN_7;
