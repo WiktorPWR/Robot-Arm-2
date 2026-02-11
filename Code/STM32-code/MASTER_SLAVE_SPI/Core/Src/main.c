@@ -57,7 +57,7 @@ TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
-
+//Small
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
