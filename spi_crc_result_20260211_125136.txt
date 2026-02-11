@@ -1,0 +1,102 @@
+======================================================================
+  DIAGNOSTYKA CRC STM32  |  2026-02-11 12:51:36
+======================================================================
+
+Cel: znalezc ktory algorytm CRC STM32 akceptuje (odpowiedz OK_FRAME=0x00)
+Kazdy test wysyla poprawny header z innym CRC i sprawdza odpowiedz.
+
+Dane do CRC (8B): slave_id + frame_id[2] + op + addr[2] + size[2]
+Zgodnie z: calculate_crc(&rx_header.slave_id, HEADER_SIZE_WITHOUT_CRC)
+
+──────────────────────────────────────────────────────────────────────
+Dane referencyjne (fid=0x0001): ['0x01', '0x00', '0x01', '0x02', '0x00', '0x00', '0x00', '0x01']
+──────────────────────────────────────────────────────────────────────
+  V1    0xBF56B846  BE-words, init=0xFFFFFFFF, poly=0x04C11DB7  [obecna impl]
+  V2    0x047097E6  LE-words, init=0xFFFFFFFF, poly=0x04C11DB7  [STM32 memcpy bez REV]
+  V3    0xBF56B846  LE-words + REV_IN=01 (byte-swap), init=0xFFFFFFFF
+  V4    0xBF56B846  bytewise MSB-first, init=0xFFFFFFFF, poly=0x04C11DB7
+  V5    0xD652031F  BE-words, init=0x00000000, poly=0x04C11DB7
+  V6    0x6D742CBF  LE-words, init=0x00000000, poly=0x04C11DB7
+  V7    0x5146CADF  BE-words REV_IN=10 (bit-reflect per word), init=0xFFFFFFFF
+  V8    0x6F136FA4  Standard CRC32 (zlib/Ethernet), poly=0xEDB88320 reflected
+  V9    0xD652031F  LE-words + REV_IN=01, init=0x00000000
+  V10   0x273739B6  BE-words, init=0xFFFFFFFF – CRC z CALEGO headera 12B (bez start/end/crc)
+
+======================================================================
+  FAZA 1: Test wszystkich wariantow CRC (jeden header na wariant)
+======================================================================
+
+──────────────────────────────────────────────────────────────────────
+TEST V1: BE-words, init=0xFFFFFFFF, poly=0x04C11DB7  [obecna impl]
+  fid=0x0010  dane_crc=['0x01', '0x00', '0x10', '0x02', '0x00', '0x00', '0x00', '0x01']
+  CRC=0x123F7F09  header=['0x55', '0x01', '0x00', '0x10', '0x02', '0x00', '0x00', '0x00', '0x01', '0x12', '0x3F', '0x7F', '0x09', '0xAA']
+  WYNIK: WRONG_CRC (0x07)
+──────────────────────────────────────────────────────────────────────
+TEST V2: LE-words, init=0xFFFFFFFF, poly=0x04C11DB7  [STM32 memcpy bez REV]
+  fid=0x0011  dane_crc=['0x01', '0x00', '0x11', '0x02', '0x00', '0x00', '0x00', '0x01']
+  CRC=0xE202602A  header=['0x55', '0x01', '0x00', '0x11', '0x02', '0x00', '0x00', '0x00', '0x01', '0xE2', '0x02', '0x60', '0x2A', '0xAA']
+  WYNIK: *** OK_FRAME – CRC POPRAWNE! ***
+──────────────────────────────────────────────────────────────────────
+TEST V3: LE-words + REV_IN=01 (byte-swap), init=0xFFFFFFFF
+  fid=0x0012  dane_crc=['0x01', '0x00', '0x12', '0x02', '0x00', '0x00', '0x00', '0x01']
+  CRC=0x246F65F9  header=['0x55', '0x01', '0x00', '0x12', '0x02', '0x00', '0x00', '0x00', '0x01', '0x24', '0x6F', '0x65', '0xF9', '0xAA']
+  WYNIK: BLAD HANDSHAKE (slave zablokowany, MISO_SYN=0x00)
+──────────────────────────────────────────────────────────────────────
+TEST V4: bytewise MSB-first, init=0xFFFFFFFF, poly=0x04C11DB7
+  fid=0x0013  dane_crc=['0x01', '0x00', '0x13', '0x02', '0x00', '0x00', '0x00', '0x01']
+  CRC=0x3F476881  header=['0x55', '0x01', '0x00', '0x13', '0x02', '0x00', '0x00', '0x00', '0x01', '0x3F', '0x47', '0x68', '0x81', '0xAA']
+  WYNIK: BLAD HANDSHAKE (slave zablokowany, MISO_SYN=0x00)
+──────────────────────────────────────────────────────────────────────
+TEST V5: BE-words, init=0x00000000, poly=0x04C11DB7
+  fid=0x0014  dane_crc=['0x01', '0x00', '0x14', '0x02', '0x00', '0x00', '0x00', '0x01']
+  CRC=0x179BF1B0  header=['0x55', '0x01', '0x00', '0x14', '0x02', '0x00', '0x00', '0x00', '0x01', '0x17', '0x9B', '0xF1', '0xB0', '0xAA']
+  WYNIK: BLAD HANDSHAKE (slave zablokowany, MISO_SYN=0x00)
+──────────────────────────────────────────────────────────────────────
+TEST V6: LE-words, init=0x00000000, poly=0x04C11DB7
+  fid=0x0015  dane_crc=['0x01', '0x00', '0x15', '0x02', '0x00', '0x00', '0x00', '0x01']
+  CRC=0xB29A6680  header=['0x55', '0x01', '0x00', '0x15', '0x02', '0x00', '0x00', '0x00', '0x01', '0xB2', '0x9A', '0x66', '0x80', '0xAA']
+  WYNIK: BLAD HANDSHAKE (slave zablokowany, MISO_SYN=0x00)
+──────────────────────────────────────────────────────────────────────
+TEST V7: BE-words REV_IN=10 (bit-reflect per word), init=0xFFFFFFFF
+  fid=0x0016  dane_crc=['0x01', '0x00', '0x16', '0x02', '0x00', '0x00', '0x00', '0x01']
+  CRC=0x5303549A  header=['0x55', '0x01', '0x00', '0x16', '0x02', '0x00', '0x00', '0x00', '0x01', '0x53', '0x03', '0x54', '0x9A', '0xAA']
+  WYNIK: BLAD HANDSHAKE (slave zablokowany, MISO_SYN=0x00)
+──────────────────────────────────────────────────────────────────────
+TEST V8: Standard CRC32 (zlib/Ethernet), poly=0xEDB88320 reflected
+  fid=0x0017  dane_crc=['0x01', '0x00', '0x17', '0x02', '0x00', '0x00', '0x00', '0x01']
+  CRC=0xBA9C8E22  header=['0x55', '0x01', '0x00', '0x17', '0x02', '0x00', '0x00', '0x00', '0x01', '0xBA', '0x9C', '0x8E', '0x22', '0xAA']
+  WYNIK: BLAD HANDSHAKE (slave zablokowany, MISO_SYN=0x00)
+──────────────────────────────────────────────────────────────────────
+TEST V9: LE-words + REV_IN=01, init=0x00000000
+  fid=0x0018  dane_crc=['0x01', '0x00', '0x18', '0x02', '0x00', '0x00', '0x00', '0x01']
+  CRC=0xA27BAF90  header=['0x55', '0x01', '0x00', '0x18', '0x02', '0x00', '0x00', '0x00', '0x01', '0xA2', '0x7B', '0xAF', '0x90', '0xAA']
+  WYNIK: BLAD HANDSHAKE (slave zablokowany, MISO_SYN=0x00)
+──────────────────────────────────────────────────────────────────────
+TEST V10: BE-words, init=0xFFFFFFFF – CRC z CALEGO headera 12B (bez start/end/crc)
+  fid=0x0019  dane_crc=['0x01', '0x00', '0x19', '0x02', '0x00', '0x00', '0x00', '0x01']
+  CRC=0x1FB4A79A  header=['0x55', '0x01', '0x00', '0x19', '0x02', '0x00', '0x00', '0x00', '0x01', '0x1F', '0xB4', '0xA7', '0x9A', '0xAA']
+  WYNIK: BLAD HANDSHAKE (slave zablokowany, MISO_SYN=0x00)
+
+======================================================================
+  PODSUMOWANIE WYNIKOW
+======================================================================
+
+  Wariant        CRC  Wynik                                Opis
+  ──────  ──────────  ───────────────────────────────────  ─────────────────────────
+  V1      0x123F7F09  WRONG_CRC                            BE-words, init=0xFFFFFFFF, poly=0x04C11D
+  V2      0xE202602A  >>> OK <<<                           LE-words, init=0xFFFFFFFF, poly=0x04C11D
+  V3      0x246F65F9  HS_FAIL                              LE-words + REV_IN=01 (byte-swap), init=0
+  V4      0x3F476881  HS_FAIL                              bytewise MSB-first, init=0xFFFFFFFF, pol
+  V5      0x179BF1B0  HS_FAIL                              BE-words, init=0x00000000, poly=0x04C11D
+  V6      0xB29A6680  HS_FAIL                              LE-words, init=0x00000000, poly=0x04C11D
+  V7      0x5303549A  HS_FAIL                              BE-words REV_IN=10 (bit-reflect per word
+  V8      0xBA9C8E22  HS_FAIL                              Standard CRC32 (zlib/Ethernet), poly=0xE
+  V9      0xA27BAF90  HS_FAIL                              LE-words + REV_IN=01, init=0x00000000
+  V10     0x1FB4A79A  HS_FAIL                              BE-words, init=0xFFFFFFFF – CRC z CALEGO
+
+╔════════════════════════════════════════════════════════════════════╗
+║  ZNALEZIONO POPRAWNY ALGORYTM CRC!                                 ║
+╚════════════════════════════════════════════════════════════════════╝
+  Wariant: V2
+  Opis:    LE-words, init=0xFFFFFFFF, poly=0x04C11DB7  [STM32 memcpy bez REV]
+  Przykladowe CRC (fid=0x0001): 0xE202602A
