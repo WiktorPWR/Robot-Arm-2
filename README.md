@@ -6,10 +6,20 @@ The main goal of this project is to design and build a **fully functional 6-axis
 
 ---
 
+## Table of Contents
+
+- [1. Mechanical Construction](#1-mechanical-construction)
+- [2. System Architecture](#2-system-architecture)
+- [3. Communication Protocols](#3-communication-protocols-used-in-the-system)
+- [4. Stepper Motor Motion Algorithm](#4-stepper-motor-motion-algorithm)
+- [Appendix A – STM32↔RPi SPI Protocol](#appendix-a-stm32raspberry-pi-spi-communication-protocol)
+- [Appendix B – AS5600 Encoder Protocol](#appendix-b-as5600-magnetic-encoder-communication-protocol)
+
+---
+
 ## 1. Mechanical Construction
 
 ![Overall assembly](https://github.com/WiktorPWR/Robot-Arm-2/raw/1ec2cd1219fc54ac53c3b8cba2e8aa6a322d9419/images/Widok%20g%C5%82owny.png)
-
 
 The entire structure of the robotic arm is based on **custom 3D-printed parts**. Each axis is driven by **stepper motors**. While other motor types could offer better performance, stepper motors were chosen due to their **availability and favorable cost** at the time of development.
 
@@ -18,13 +28,13 @@ Some axes use **dual-motor configurations** to increase available torque. In the
 ### Axis Torque Summary
 
 | Axis | Motor Model           | Number of Motors | Motor Torque [Nm] | Gear Ratio | Output Torque [Nm] |
-| ---: | --------------------- | ---------------- | ----------------- | ---------- | ------------------ |
-|    1 | 57HS56-2804 (NEMA 23) | 1                | 1.26              | 17:1       | 15.0               |
-|    2 | 57HS76-2804 (NEMA 23) | 2                | 1.89              | 17:1       | 45.0               |
-|    3 | 57HS56-2804 (NEMA 23) | 2                | 1.26              | 17:1       | 30.0               |
-|    4 | 57HS56-2804 (NEMA 23) | 1                | 1.26              | 17:1       | 15.0               |
-|    5 | 42HS40-1704 (NEMA 17) | 2                | 0.40              | 17:1       | 9.5                |
-|    6 | 42HS40-1704 (NEMA 17) | 1                | 0.40              | 17:1       | 4.8                |
+| ---: | --------------------- | :--------------: | :---------------: | :--------: | :----------------: |
+|    1 | 57HS56-2804 (NEMA 23) |        1         |       1.26        |    17:1    |        15.0        |
+|    2 | 57HS76-2804 (NEMA 23) |        2         |       1.89        |    17:1    |        45.0        |
+|    3 | 57HS56-2804 (NEMA 23) |        2         |       1.26        |    17:1    |        30.0        |
+|    4 | 57HS56-2804 (NEMA 23) |        1         |       1.26        |    17:1    |        15.0        |
+|    5 | 42HS40-1704 (NEMA 17) |        2         |       0.40        |    17:1    |         9.5        |
+|    6 | 42HS40-1704 (NEMA 17) |        1         |       0.40        |    17:1    |         4.8        |
 
 > **Note:** Axis 2 will be redesigned due to insufficient output torque. A higher gear ratio will be used to improve performance.
 
@@ -34,16 +44,25 @@ Some axes use **dual-motor configurations** to increase available torque. In the
 
 ## 2. System Architecture
 
-![System architecture – overview](images/system_architecture_1.png)
+The **central controller** of the robotic arm is a **Raspberry Pi 3B+**. It manages six independent **slave controllers**, each based on **STM32F103** or **STM32F401** microcontrollers.
 
-As shown above, the **central controller** of the robotic arm is a **Raspberry Pi 3B+**. It manages six independent **slave controllers**, each based on **STM32F103** or **STM32F401** microcontrollers.
+```
+Raspberry Pi 3B+ (Master)
+        │
+        ├── SPI ──► STM32 #1  (Axis 1 – NEMA 23 × 1,  i=17:1,  τ=15.0 Nm)
+        ├── SPI ──► STM32 #2  (Axis 2 – NEMA 23 × 2,  i=17:1,  τ=45.0 Nm)
+        ├── SPI ──► STM32 #3  (Axis 3 – NEMA 23 × 2,  i=17:1,  τ=30.0 Nm)
+        ├── SPI ──► STM32 #4  (Axis 4 – NEMA 23 × 1,  i=17:1,  τ=15.0 Nm)
+        ├── SPI ──► STM32 #5  (Axis 5 – NEMA 17 × 2,  i=17:1,  τ= 9.5 Nm)
+        └── SPI ──► STM32 #6  (Axis 6 – NEMA 17 × 1,  i=17:1,  τ= 4.8 Nm)
+```
 
 This distributed architecture was chosen to achieve:
 
-* **High flexibility** of the system
-* **Improved reliability** (failure of one slave does not disable the entire arm)
-* **Easy future modifications and extensions**
-* **Reduced computational load per controller**, as tasks are distributed across six independent units
+- **High flexibility** of the system
+- **Improved reliability** – failure of one slave does not disable the entire arm
+- **Easy future modifications and extensions**
+- **Reduced computational load per controller**, as tasks are distributed across six independent units
 
 ### Responsibilities of the Raspberry Pi (Master)
 
@@ -51,17 +70,13 @@ This distributed architecture was chosen to achieve:
 2. Providing the **human–machine interface (HMI)**
 3. Sending **target angles** to each axis controller
 
----
+### Responsibilities of each Slave (STM32)
 
-![System architecture – slave responsibilities](images/system_architecture_2.png)
-
-Each **slave controller** is responsible for:
-
-1. **Communication** with the master (receiving target angles)
+1. **Communication** with the master (receiving target angles via SPI)
 2. **Motor control** for the assigned axis
-3. **Encoder handling**:
-   * Robot joint shaft position (incremental or magnetic encoder)
-   * Motor shaft position (magnetic encoder)
+3. **Encoder handling:**
+   - Robot joint shaft position (incremental or magnetic encoder)
+   - Motor shaft position (magnetic encoder)
 4. **Endstop handling** for the assigned axis
 
 ---
@@ -70,346 +85,328 @@ Each **slave controller** is responsible for:
 
 ### 3.1 STM32 – Raspberry Pi Communication
 
-![Communication sequence diagram](https://github.com/WiktorPWR/Robot-Arm-2/blob/1ec2cd1219fc54ac53c3b8cba2e8aa6a322d9419/images/communication_seuensce_diagram.png)
+The Raspberry Pi communicates with each STM32 slave over a dedicated **SPI bus**, using a custom register-based protocol with CRC-32 error detection, a 3-way handshake, and frame validation. The full specification is described in [Appendix A](#appendix-a-stm32raspberry-pi-spi-communication-protocol).
 
-![Communication state machine](https://github.com/WiktorPWR/Robot-Arm-2/blob/1ec2cd1219fc54ac53c3b8cba2e8aa6a322d9419/images/machine_state_rs485.png)
+> ⚠️ **Note:** The current communication protocol is **overengineered** and will be **redesigned into a simpler and more robust solution** in the future.
 
-![Communication meme](https://github.com/WiktorPWR/Robot-Arm-2/blob/1ec2cd1219fc54ac53c3b8cba2e8aa6a322d9419/images/overengier_meme.jpg)
+### 3.2 AS5600 Magnetic Encoder Communication
 
-> ⚠️ **Important note:**
-> The current communication protocol is **overengineered** and will be **redesigned into a simpler and more robust solution** in the future. The diagrams above illustrate the general concept used in the current implementation.
-
----
-
-## Appendix A. STM32–Raspberry Pi Communication Protocol Specification
-
-### A.1 Frame Structure Overview
-
-The protocol defines **three types of communication frames**, each serving a specific role in the data exchange process between the **Master** and **Slave** units.
-
-
----
-
-### A.1.1 Command Frame (Master → Slave)
-
-The **Command Frame** is the primary mechanism for sending commands from the Master to a Slave. It has a **fixed length of 25 bytes** (`BUFFER_FRAME_SIZE`), ensuring deterministic transmission and simplifying **DMA buffer handling**.
-
-#### Table A.1 – Command Frame Structure
-
-| Offset | Size | Field      | Description                |
-| -----: | ---- | ---------- | -------------------------- |
-|      0 | 1 B  | START_BYTE | Start byte (`0xAA`)        |
-|      1 | 1 B  | SLAVE_ID   | Slave identifier (`0x01`)  |
-|      2 | 1 B  | COMMAND    | Command code (`0x01–0x07`) |
-|      3 | 1 B  | LENGTH     | Payload length (`0–20`)    |
-|   4–23 | 20 B | DATA       | Payload data               |
-|     24 | 1 B  | END_BYTE   | End byte (`0xBB`)          |
-
-The `START_BYTE` and `END_BYTE` act as **frame delimiters**, allowing detection of frame boundaries and basic integrity validation. The `SLAVE_ID` field enables multi-slave addressing; however, the current implementation uses a single slave with ID `0x01`.
-
----
-
-### A.1.2 Acknowledgement Frame (Slave → Master)
-
-After receiving and validating a Command Frame, the Slave responds with an **Acknowledgement Frame**. Unlike the Command Frame, this frame has a **variable length** of `5 + LENGTH` bytes, where `LENGTH` specifies the number of echoed data bytes.
-
-#### Table A.2 – Acknowledgement Frame Structure
-
-|      Offset | Size     | Field      | Description               |
-| ----------: | -------- | ---------- | ------------------------- |
-|           0 | 1 B      | START_BYTE | Start byte (`0xAA`)       |
-|           1 | 1 B      | SLAVE_ID   | Slave identifier (`0x01`) |
-|           2 | 1 B      | ERROR_CODE | Error code (`0x00–0x08`)  |
-|           3 | 1 B      | LENGTH     | Echo data length (`0–20`) |
-| 4–(4+LEN-1) | Variable | DATA       | Echoed payload            |
-|       4+LEN | 1 B      | END_BYTE   | End byte (`0xBB`)         |
-
-The `ERROR_CODE` field informs the Master about the result of frame validation. A value of `0x00` (`NO_ERROR`) indicates successful reception, while other values correspond to specific detected errors.
-
----
-
-### A.1.3 ACK Frame (Master → Slave)
-
-The **ACK Frame** is the final step in the **three-stage handshake mechanism**. It is the shortest frame in the protocol and consists of only **4 bytes**.
-
-#### Table A.3 – ACK Frame Structure
-
-| Offset | Size | Field      | Description                                   |
-| -----: | ---- | ---------- | --------------------------------------------- |
-|      0 | 1 B  | START_BYTE | Start byte (`0xAA`)                           |
-|      1 | 1 B  | SLAVE_ID   | Slave identifier (`0x01`)                     |
-|      2 | 1 B  | ACK        | Acknowledgement (`0x01 = OK`, `0x00 = ERROR`) |
-|      3 | 1 B  | END_BYTE   | End byte (`0xBB`)                             |
-
----
-
-### A.5 Command Set (Master → Slave)
-
-This section describes all commands supported by the communication protocol. Each command is identified by a unique command code and may optionally contain a payload, depending on its function.
-
----
-
-#### A.5.1 START_HOMING (`0x01`)
-
-This command initiates the **homing procedure**, used to find the motor reference position.
-
-The process consists of moving the axis toward its **endstop** at a minimal speed until a signal edge is detected. After successful homing, the current motor position is treated as the **reference point (zero position)** for all subsequent movements.
-
-* **Payload:** none
-* **LENGTH:** `0`
-
----
-
-#### A.5.2 START_MOVING (`0x02`)
-
-This command triggers a **rotational movement** by a specified angle.
-
-The payload contains the target angle expressed in **degrees**, encoded as a **32-bit floating-point value (IEEE 754, float32)** in **Little-Endian** format.
-
-* **Payload size:** 4 bytes
-* **LENGTH:** `4`
-* **Data format:** `float32 (Little-Endian)`
-
-**Encoding example:**
-
-Target angle: `90.0°`
-
-* IEEE 754 (hex): `0x42B40000`
-* Little-Endian byte order: `00 00 B4 42`
-
----
-
-#### A.5.3 GET_STATUS (`0x03`)
-
-This command requests the **current status of the Slave unit**, including:
-
-* Motor position
-* Endstop state
-* Active state of the internal state machine
-
-**Parameters:**
-* **Payload:** none
-* **LENGTH:** `0`
-
----
-
-#### A.5.4 STOP (`0x04`)
-
-This is an **emergency stop command**.
-
-It immediately interrupts the currently executed motion and disables the control signal generator, stopping the motor as fast as possible.
-
-* **Payload:** none
-* **LENGTH:** `0`
-
----
-
-#### A.5.5 CHANGE_MOVEMENT_VALUES (`0x05`)
-
-This command allows modification of **motion profile parameters** without reprogramming the microcontroller.
-
-The payload contains **four 16-bit values**, encoded in **Little-Endian** format.
-
-* **Payload size:** 8 bytes
-* **LENGTH:** `8`
-
-**Payload structure:**
-
-| Bytes | Parameter            | Unit    |
-| ----: | -------------------- | ------- |
-|   0–1 | Minimum speed        | steps/s |
-|   2–3 | Maximum speed        | steps/s |
-|   4–5 | Maximum acceleration | deg/s²  |
-|   6–7 | Maximum jerk         | deg/s³  |
-
----
-
-#### A.5.6 START_DIAGNOSTIC (`0x06`)
-
-This command starts a **diagnostic procedure** that verifies the correct operation of all major subsystems, including:
-
-* Control signal generators
-* GPIO interfaces
-* Sensors
-
-**Parameters:**
-* **Payload:** none
-* **LENGTH:** `0`
-
----
-
-#### A.5.7 ACCEPT_CONFIRMATION (`0x07`)
-
-This is a **special command used to reset the Slave unit** after task completion.
-
-After receiving this command:
-
-* The Slave sets GPIO pin **PB6** to a low state
-* The internal state machine transitions to **IDLE**
-* The unit signals readiness to accept a new command
-
-**Parameters:**
-* **Payload:** none
-* **LENGTH:** `0`
-
----
-
-### A.6 Error Codes
-
-The error detection system is a critical element ensuring **communication reliability**. Any issue detected during frame validation results in an appropriate **error code** returned in the acknowledgement frame.
-
-#### Table A.4 – Protocol Error Codes
-
-| Code | Name                     | Description                                        |
-| ---: | ------------------------ | -------------------------------------------------- |
-| 0x00 | NO_ERROR                 | No error, frame is valid                           |
-| 0x01 | WRONG_START_BYTE         | Invalid start byte                                 |
-| 0x02 | NO_SUCH_COMMAND          | Unknown command code                               |
-| 0x03 | WRONG_LENGTH             | Payload length does not match command requirements |
-| 0x04 | WRONG_END_BYTE           | Invalid end byte                                   |
-| 0x05 | ALLOCATION_ERROR         | Memory allocation error                            |
-| 0x06 | WRONG_START_BYTE_CONF    | Invalid start byte in ACK frame                    |
-| 0x07 | WRONG_END_BYTE_CONF      | Invalid end byte in ACK frame                      |
-| 0x08 | BEFORE_USING_RESET_SLAVE | Slave reset required before issuing a new command  |
-
-Frame validation is performed **sequentially** and terminates immediately upon detection of the first error. The validation process includes:
-
-* Verification of START and END bytes
-* Validation of the Slave ID
-* Command code verification
-* Consistency check between the LENGTH field and the command requirements
-
----
-
-## Appendix B. AS5600 Magnetic Encoder Communication Protocol
-
-The communication system with the **AS5600 magnetic encoder** is implemented using a **three-layer architecture**, where an **STM8 microcontroller** acts as an intermediary between the sensor and the higher-level control unit (STM32).
-
-This design choice results from the limitations of the **I2C interface**, which is not suitable for reliable communication over distances greater than several tens of centimeters in environments with **high electromagnetic interference (EMI)**.
-
-![Idea of communication](https://github.com/WiktorPWR/Robot-Arm-2/blob/1ec2cd1219fc54ac53c3b8cba2e8aa6a322d9419/images/Komunikacja_nkoder_magnetyczny.drawio.png)
-
----
-
-### B.1 System Architecture
-
-#### B.1.1 Data Acquisition Layer
-
-![Communiacation nkoder](https://github.com/WiktorPWR/Robot-Arm-2/blob/1ec2cd1219fc54ac53c3b8cba2e8aa6a322d9419/images/rs485_sequence_diagram.png)
-
-![State machine](https://github.com/WiktorPWR/Robot-Arm-2/blob/1ec2cd1219fc54ac53c3b8cba2e8aa6a322d9419/images/communication_state_machine.png)
-
-The AS5600 magnetic encoder communicates with the STM8 via the **I2C interface**. The STM8 operates in **continuous mode**, cyclically reading data from the sensor and processing it into three physical quantities:
-
-* **Angular position** — current shaft position in the range `0–360°`
-* **Angular velocity** — calculated as the time derivative of position
-* **Angular acceleration** — calculated as the time derivative of velocity
-
-These values are stored in **dedicated internal registers** of the STM8 and updated in each iteration of the main loop.
-
----
-
-#### B.1.2 Transmission Layer
-
-Communication between the **STM8 and STM32** is implemented using the **RS-485 bus**. This standard was selected to ensure **reliable transmission over distances of 2–2.5 meters** in an environment with significant EMI generated by stepper motors and power wiring.
-
-The signal path is as follows:
-
-1. STM8 generates a data frame and sends it via UART
-2. A UART–RS-485 transceiver converts the signal to differential form
-3. The differential signal is transmitted over a shielded RS-485 cable
-4. An RS-485–UART transceiver converts the signal back to UART
-5. STM32 receives the data frame via UART
-
----
-
-#### B.1.3 Application Layer
-
-At the application level, a simple **master–slave protocol** is defined:
-
-* **Master (STM32):** initiates communication and requests register values
-* **Slave (STM8):** responds to requests by returning the requested data
-
----
-
-### B.2 Communication Frame Structure
-
-The protocol defines a **minimalist frame structure**, optimized for **low transmission overhead** and **ease of implementation**.
-
----
-
-#### B.2.1 Request Frame (Master → Slave)
-
-The request frame sent by the STM32 consists of **three bytes**.
-
-**Table B.1 – Request Frame Structure**
-
-| Offset | Size | Field      | Description                       |
-| -----: | ---- | ---------- | --------------------------------- |
-|      0 | 1 B  | START_BYTE | Start byte (`0xAA`)               |
-|      1 | 1 B  | REG_ID     | Register identifier (`0x01–0x03`) |
-|      2 | 1 B  | END_BYTE   | End byte (`0x55`)                 |
-
----
-
-#### B.2.2 Response Frame (Slave → Master)
-
-The response frame sent by the STM8 contains the requested register value.
-
-**Table B.2 – Response Frame Structure**
-
-| Offset | Size | Field      | Description                                 |
-| -----: | ---- | ---------- | ------------------------------------------- |
-|      0 | 1 B  | START_BYTE | Start byte (`0xAA`)                         |
-|      1 | 1 B  | REG_ID     | Register identifier (echo)                  |
-|    2–3 | 2 B  | DATA       | Register value (Little-Endian, 16-bit)      |
-|      4 | 1 B  | END_BYTE   | End byte (`0x55`)                           |
-
----
-
-### B.3 Data Registers
-
-The STM8 exposes three registers containing processed data from the encoder:
-
-**Table B.3 – Available Encoder Registers**
-
-| ID   | Name         | Unit       | Description                              |
-| ---: | ------------ | ---------- | ---------------------------------------- |
-| 0x01 | POSITION     | [ticks]    | Current angular position (0–4095)        |
-| 0x02 | VELOCITY     | [ticks/s]  | Angular velocity                         |
-| 0x03 | ACCELERATION | [ticks/s²] | Angular acceleration                     |
-
-The AS5600 encoder offers **12-bit resolution**, corresponding to **4096 levels per full rotation**. 
-
-**Conversion to degrees:**
-
-```
-θ[°] = (POSITION / 4096) × 360°
-```
+The AS5600 encoder communicates with an intermediate **STM8 microcontroller** via I2C. The STM8 then forwards processed data (position, velocity, acceleration) to the STM32 over **RS-485**, chosen for its reliability over distances of 2–2.5 m in high-EMI environments. The full specification is described in [Appendix B](#appendix-b-as5600-magnetic-encoder-communication-protocol).
 
 ---
 
 ## 4. Stepper Motor Motion Algorithm
 
-The motion of the stepper motors in this robotic arm is currently implemented using **relatively simple algorithms**. These basic control routines handle fundamental movements reliably but **do not yet optimize the full trajectory**.
+The motion of the stepper motors is currently implemented using **relatively simple algorithms**. These handle fundamental movements reliably but **do not yet optimize the full trajectory**.
 
 The planned algorithm will integrate:
 
-* **S-curve profiles** for smooth acceleration and deceleration across the entire trajectory.
-* **PID control** to maintain accurate motor speed and reduce overshoot or lag.
+- **S-curve profiles** for smooth acceleration and deceleration across the entire trajectory
+- **PID control** to maintain accurate motor speed and reduce overshoot or lag
 
 A detailed description of the algorithm, including equations, tuning parameters, and implementation notes, can be found in the separate file: [Stepper Motor Algorithm Details](path/to/stepper_algorithm_details.md).
 
-This approach ensures precise and smooth motion while maintaining safe operation and reducing mechanical stress on the arm.
-
-
+---
 
 ## Future Development
 
-The project is **under active development**. Mechanical redesigns, protocol simplification, and software improvements are planned.
+The project is **under active development**. Planned improvements include:
+
+- Mechanical redesign of Axis 2 (higher gear ratio)
+- Simplification of the SPI communication protocol
+- Implementation of S-curve motion profiles with PID control
+- Definition of final application and use cases
 
 ---
 
 ## Author
 
 *Project developed as part of an engineering thesis.*
+
+---
+---
+
+## Appendix A – STM32/Raspberry Pi SPI Communication Protocol
+
+### A.1 Overview
+
+The protocol connects the **Raspberry Pi 3B+** (Master) with each **STM32** slave over SPI at 500 kHz, Mode 0. CS is controlled manually via GPIO. An additional READY pin (GPIO22) signals slave callback completion.
+
+Protocol constants:
+
+| Constant       | Value  | Direction      | Description                        |
+|---------------|--------|----------------|------------------------------------|
+| `START_BYTE`  | `0x55` | both           | First byte of every frame          |
+| `END_BYTE`    | `0xAA` | both           | Last byte of every frame           |
+| `SLAVE_ID`    | `0x01` | Master → Slave | Slave identifier                   |
+| `SYN_BYTE`    | `0x97` | Master → Slave | Handshake initiation               |
+| `SYN_ACK_BYTE`| `0x98` | Slave → Master | Handshake acknowledgement          |
+| `ACK_BYTE`    | `0x99` | Master → Slave | Handshake completion               |
+| `COMMIT_BYTE` | `0x9A` | both           | Data confirmation frame identifier |
+
+GPIO pins:
+
+| Pin   | BCM | Direction    | Active | Description                         |
+|------|-----|--------------|--------|-------------------------------------|
+| CS   | 5   | OUT (Master) | LOW    | Chip Select – active during transfer|
+| READY| 22  | IN  (Slave)  | LOW    | Slave callback complete flag        |
+
+---
+
+### A.2 Slave Registers
+
+| Address  | Name                 | Mode | Size | Description                              |
+|---------|----------------------|------|------|------------------------------------------|
+| `0x0000`| `REG_HOMING`         | R/W  | 1 B  | Start/stop homing (0=stop, 1=start)      |
+| `0x0001`| `REG_MOVE_ANGLE`     | R/W  | 4 B  | Target angle [°], uint32 big-endian      |
+| `0x0002`| `REG_DIAG_CONTROL`   | W    | 1 B  | Diagnostic control (write-only)          |
+| `0x0003`| `REG_DIAG_STATUS`    | R    | 4 B  | Diagnostic status, uint32 (read-only)    |
+| `0x0004`| `REG_EMERGENCY_STOP` | R/W  | 1 B  | Emergency stop (0=inactive, 1=active)    |
+| `0x0005+`| –                   | –    | –    | Reserved → `WRONG_REGISTER`              |
+
+Max `data_size` = 16 B. Writing to a read-only register or reading from a write-only register returns `WRONG_OPERATION`.
+
+---
+
+### A.3 Header Frame Structure (14 bytes)
+
+Sent by the master after the handshake. The slave validates it sequentially and returns a 1-byte `VALIDATION_CODE`.
+
+```
+Offset   Field               Size   Value / Range
+─────────────────────────────────────────────────────────────
+ [0]     start_byte           1 B   0x55  (fixed)
+ [1]     slave_id             1 B   0x01  (fixed)
+ [2:4]   frame_id             2 B   1..0xFFFE, big-endian, monotonically increasing
+ [4]     operation_type       1 B   0x01 = READ  |  0x02 = WRITE
+ [5:7]   register_address     2 B   0..4, big-endian
+ [7:9]   data_size            2 B   1..16, big-endian
+ [9:13]  crc32                4 B   big-endian, CRC-32 computed over bytes [1..8]
+ [13]    end_byte             1 B   0xAA  (fixed)
+─────────────────────────────────────────────────────────────
+Total: 14 bytes
+```
+
+**COMMIT frame** (4 bytes, used by both sides):
+
+```
+[0]  0x55        start_byte
+[1]  0x9A        commit_byte
+[2]  error_code  0x00 = OK  |  0x07 = WRONG_CRC_VALUE
+[3]  0xAA        end_byte
+```
+
+---
+
+### A.4 WRITE Sequence
+
+Master writes data to a slave register.
+
+```
+MASTER (Raspberry Pi)                    SLAVE (STM32)
+─────────────────────────────────────────────────────────────────────
+                         ① HANDSHAKE
+─────────────────────────────────────────────────────────────────────
+  SYN (0x97)            ──────────────►
+                                         RxCplt → setup DMA TX
+  0xFF dummy            ──────────────►
+                        ◄──────────────  SYN_ACK (0x98)
+  ACK (0x99)            ──────────────►
+                                         → state: WAIT_HEADER
+─────────────────────────────────────────────────────────────────────
+                         ② HEADER (14B)
+─────────────────────────────────────────────────────────────────────
+  HEADER (14B)          ──────────────►
+  [START·ID·FID·OP·REG·SIZE·CRC·END]
+                                         sequential validation
+─────────────────────────────────────────────────────────────────────
+                         ③ VALIDATION (1B)
+─────────────────────────────────────────────────────────────────────
+  0xFF dummy            ──────────────►
+                        ◄──────────────  VALIDATION_CODE
+                        ◄──────────────  0x00  →  OK, continue
+                        ◄──────────────  0x01–0x08  →  error,
+                                                        slave → WAIT_SYN
+─────────────────────────────────────────────────────────────────────
+                         ④ DATA + CRC (N+4B)
+─────────────────────────────────────────────────────────────────────
+  DATA + CRC32 (N+4B)   ──────────────►
+  [payload | crc3 crc2 crc1 crc0]
+                                         CRC verification
+─────────────────────────────────────────────────────────────────────
+                         ⑤ SLAVE COMMIT (4B)
+─────────────────────────────────────────────────────────────────────
+  0x00 × 4 dummy        ──────────────►
+                        ◄──────────────  [0x55, 0x9A, err, 0xAA]
+                        ◄──────────────  err=0x00  →  data written ✓
+                        ◄──────────────  err=0x07  →  CRC error   ✗
+─────────────────────────────────────────────────────────────────────
+                         ⑥ READY FLAG (optional)
+─────────────────────────────────────────────────────────────────────
+  wait GPIO22 LOW       ◄── GPIO ───────  HAL_SPI_RxCpltCallback
+                                          → GPIO22 LOW
+─────────────────────────────────────────────────────────────────────
+```
+
+---
+
+### A.5 READ Sequence
+
+Slave sends register data to the master.
+
+```
+MASTER (Raspberry Pi)                    SLAVE (STM32)
+─────────────────────────────────────────────────────────────────────
+                         ① HANDSHAKE  (identical to WRITE)
+─────────────────────────────────────────────────────────────────────
+  SYN (0x97)            ──────────────►
+  0xFF dummy            ──────────────►
+                        ◄──────────────  SYN_ACK (0x98)
+  ACK (0x99)            ──────────────►
+─────────────────────────────────────────────────────────────────────
+                         ② HEADER (14B)  –  operation_type = 0x01 (READ)
+─────────────────────────────────────────────────────────────────────
+  HEADER (14B)          ──────────────►
+                                         validation + R/W permission check
+─────────────────────────────────────────────────────────────────────
+                         ③ VALIDATION (1B)
+─────────────────────────────────────────────────────────────────────
+  0xFF dummy            ──────────────►
+                        ◄──────────────  VALIDATION_CODE (0x00 = OK)
+─────────────────────────────────────────────────────────────────────
+                         ④ DATA from slave (N+4B)
+─────────────────────────────────────────────────────────────────────
+  0x00 × (N+4) dummy    ──────────────►
+                        ◄──────────────  DATA (N bytes) + CRC32 (4B)
+                                         master verifies CRC
+─────────────────────────────────────────────────────────────────────
+                         ⑤ MASTER COMMIT (4B)
+─────────────────────────────────────────────────────────────────────
+  [0x55, 0x9A, 0x00, 0xAA]  ──────────►   CRC OK  →  read accepted  ✓
+  [0x55, 0x9A, 0x07, 0xAA]  ──────────►   CRC ERR →  slave → WAIT_SYN ✗
+                                           TxCpltCallback → state reset
+─────────────────────────────────────────────────────────────────────
+```
+
+---
+
+### A.6 Validation Error Codes
+
+The slave validates the header sequentially and stops at the first error.
+
+| Code   | Constant             | Condition checked                         | Slave action          |
+|-------|----------------------|-------------------------------------------|-----------------------|
+| `0x00`| `OK_FRAME`           | no errors                                 | continue transaction  |
+| `0x01`| `WRONG_START_BYTE`   | `header[0] ≠ 0x55`                        | reset → `WAIT_SYN`    |
+| `0x02`| `WRONG_FRAME_ID`     | `frame_id == last_accepted_frame_id`      | reset → `WAIT_SYN`    |
+| `0x03`| `WRONG_SLAVE_ID`     | `header[1] ≠ 0x01`                        | reset → `WAIT_SYN`    |
+| `0x04`| `WRONG_REGISTER`     | `reg_addr ≥ 5`                            | reset → `WAIT_SYN`    |
+| `0x05`| `WRONG_DATA_SIZE`    | `data_size ≠ REG_SIZES[reg]` or `> 16`   | reset → `WAIT_SYN`    |
+| `0x06`| `WRONG_END_BYTE`     | `header[13] ≠ 0xAA`                       | reset → `WAIT_SYN`    |
+| `0x07`| `WRONG_CRC_VALUE`    | `crc32(fields[1..8]) ≠ header[9:13]`     | reset → `WAIT_SYN`    |
+| `0x08`| `WRONG_OPERATION`    | operation not permitted for this register | reset → `WAIT_SYN`    |
+
+> `WRONG_FRAME_ID` acts as a **replay guard** – the slave rejects reuse of the last accepted `frame_id`.
+
+---
+
+### A.7 CRC-32
+
+| Parameter    | Value                                        |
+|-------------|----------------------------------------------|
+| Polynomial  | `0x04C11DB7`                                 |
+| Init        | `0xFFFFFFFF`                                 |
+| Byte order  | word-by-word, **Little-Endian** (STM32 arch) |
+| Padding     | to multiple of 4 bytes (zeros)               |
+| Output      | uint32, big-endian in frame                  |
+
+STM32 is a LE architecture. `HAL_CRC_Calculate()` loads bytes into `uint32_t[]` with byte[0] as LSB. The CRC unit processes each word MSB→LSB, so the master must reinterpret input data as LE words before computing.
+
+```python
+# Verification example – CRC input for header (8 bytes):
+# slave_id | frame_id(2B) | op | reg_addr(2B) | data_size(2B)
+crc_input = bytes([0x01, 0x00, 0x11, 0x02, 0x00, 0x00, 0x00, 0x01])
+assert crc32_stm32(crc_input) == 0xE202602A   # STM32 responds OK_FRAME
+```
+
+---
+
+### A.8 Timing Constants
+
+| Constant                 | Value   | Description                                                    |
+|-------------------------|---------|----------------------------------------------------------------|
+| `CS_SETUP_TIME`         | 200 µs  | Delay after CS LOW before xfer2() – time for STM32 DMA setup  |
+| `DELAY_BETWEEN_STEPS`   | 10 ms   | Between protocol steps – time for RxCplt/TxCplt callbacks     |
+| `DELAY_AFTER_VALIDATION`| 20 ms   | After receiving VALIDATION_CODE – time for TxCpltCallback      |
+| `DELAY_AFTER_ERROR_VAL` | 50 ms   | After failed validation – time for slave state reset           |
+| `READY_TIMEOUT_S`       | 2.0 s   | GPIO22 LOW wait timeout                                        |
+| `SPI_RESET_DELAY`       | 100 ms  | Bus reset delay (spidev close + reopen)                        |
+| `SPI_SPEED_HZ`          | 500 kHz | SPI bus speed                                                  |
+
+> **⚠️ Critical:** after receiving `VALIDATION_CODE`, the STM32 executes `HAL_SPI_TxCpltCallback()` which changes its internal state. The master **must** wait `DELAY_AFTER_VALIDATION` before the next CS toggle. Toggling CS too early causes `HAL_SPI_DMAStop()` in the GPIO ISR to abort the callback, locking the slave in `SEND_VALIDATION_CODE` state.
+
+---
+---
+
+## Appendix B – AS5600 Magnetic Encoder Communication Protocol
+
+### B.1 System Architecture
+
+The AS5600 communication stack uses a **three-layer architecture** where an STM8 microcontroller acts as an intermediary between the sensor and the STM32.
+
+This design was chosen because the **I2C interface is not reliable over distances greater than a few tens of centimeters** in environments with high electromagnetic interference (EMI) generated by stepper motors and power wiring.
+
+```
+AS5600 ──I2C──► STM8 ──UART──► RS-485 transceiver
+                                      │
+                              (shielded cable, 2–2.5 m)
+                                      │
+                         RS-485 transceiver ──UART──► STM32
+```
+
+The **STM8 operates in continuous mode**, cyclically reading from the sensor and computing three values stored in its internal registers:
+
+- **Angular position** – current shaft position, range 0–360°
+- **Angular velocity** – time derivative of position
+- **Angular acceleration** – time derivative of velocity
+
+At the **application layer**, STM32 acts as master and STM8 as slave: STM32 requests a register value, STM8 responds with the data.
+
+---
+
+### B.2 Frame Structure
+
+#### Request Frame (STM32 → STM8) – 3 bytes
+
+| Offset | Size | Field      | Description                        |
+| -----: | :--: | ---------- | ---------------------------------- |
+|      0 | 1 B  | START_BYTE | Start byte (`0xAA`)                |
+|      1 | 1 B  | REG_ID     | Register identifier (`0x01–0x03`)  |
+|      2 | 1 B  | END_BYTE   | End byte (`0x55`)                  |
+
+#### Response Frame (STM8 → STM32) – 5 bytes
+
+| Offset | Size | Field      | Description                              |
+| -----: | :--: | ---------- | ---------------------------------------- |
+|      0 | 1 B  | START_BYTE | Start byte (`0xAA`)                      |
+|      1 | 1 B  | REG_ID     | Register identifier (echo)               |
+|    2–3 | 2 B  | DATA       | Register value (Little-Endian, 16-bit)   |
+|      4 | 1 B  | END_BYTE   | End byte (`0x55`)                        |
+
+---
+
+### B.3 Data Registers
+
+| ID     | Name           | Unit        | Description                         |
+| -----: | -------------- | ----------- | ----------------------------------- |
+| `0x01` | `POSITION`     | [ticks]     | Current angular position (0–4095)   |
+| `0x02` | `VELOCITY`     | [ticks/s]   | Angular velocity                    |
+| `0x03` | `ACCELERATION` | [ticks/s²]  | Angular acceleration                |
+
+The AS5600 has **12-bit resolution** (4096 levels per full rotation).
+
+Conversion to degrees:
+
+```
+θ [°] = (POSITION / 4096) × 360°
+```
