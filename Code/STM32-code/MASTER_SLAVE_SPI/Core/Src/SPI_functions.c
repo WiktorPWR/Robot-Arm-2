@@ -112,7 +112,7 @@ uint8_t copying_and_cheking_from_buffer_normal_frame(struct message* SPI_message
 
 	//Chec other values
 
-	// --- Check if slave needs reset befor using again it
+	// --- Check if slave needs reset before using again it
 	if(SPI_message->frame.command != ACCEPT_CONFIRMATION_COMMAND || (SLAVE_END_TASK_GPIO_Port->ODR & GPIO_ODR_ODR5_Msk)){
 		//ok se return error value
 		return BEFOR_USING_ANY_NEW_COMMAND_RESET_SLAVE;
