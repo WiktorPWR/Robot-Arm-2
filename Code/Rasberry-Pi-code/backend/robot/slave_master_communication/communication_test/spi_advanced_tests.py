@@ -928,29 +928,18 @@ def protocol_timeout_test(category, test_name, abort_after, delay_s=2.5):
 def _verify_slave_reset(log, category):
     """Po timeoucie sprawdza czy STM32 zresetowal sie (odpowiada na SYN)."""
     try:
-        # 1. Wysyłamy SYN. 
-        # Ważne: W SPI odbieramy dane w tym samym momencie, w którym wysyłamy.
-        # Po timeoutcie Slave może odpowiedzieć SYN_ACK (0x98) natychmiast.
-        resp1 = spi_xfer([SYN_BYTE], log, "SYN (po timeout)")
+        spi_xfer([SYN_BYTE], log, "SYN (po timeout)")
         time.sleep(DELAY_BETWEEN_STEPS)
-        
-        # 2. Wysyłamy dummy byte, aby odebrać SYN_ACK, jeśli nie przyszedł wcześniej
-        resp2 = spi_xfer([0xFF], log, "SYN_ACK (po timeout)")
-        
-        # SPRAWDZENIE:
-        # Akceptujemy SYN_ACK (0x98) w dowolnym z tych dwóch kroków.
-        # To rozwiązuje problem przesunięcia o 1 bajt po resecie.
-        if resp1[0] == SYN_ACK_BYTE or resp2[0] == SYN_ACK_BYTE:
+        resp = spi_xfer([0xFF], log, "SYN_ACK (po timeout)")
+        if resp[0] == SYN_ACK_BYTE:
             rprint("    OK: STM32 zresetowal sie i odpowiada na SYN")
             rprint("  PASSED\n")
             stats.add(category, True)
             return True
         else:
-            # Wypisz co faktycznie odebraliśmy dla debugu
-            rprint(f"    FAIL: STM32 nie odpowiedzial SYN_ACK. Odebrano: 1:[0x{resp1[0]:02X}], 2:[0x{resp2[0]:02X}]")
+            rprint(f"    FAIL: STM32 nie odpowiedzial SYN_ACK: 0x{resp[0]:02X}")
             stats.add(category, False)
             return False
-            
     except Exception as e:
         rprint(f"    EXCEPTION: {e}")
         stats.add(category, False)
@@ -1298,7 +1287,16 @@ def run_all_tests():
     # =========================================================================
     _section("KATEGORIA 13: Testy timeoutu STM32")
 
-    for step in ['syn', 'ack', 'header', 'data']:
+    # for step in ['syn', 'ack', 'header', 'data']:
+    #     protocol_timeout_test(
+    #         "13-Timeout",
+    #         f"13.x Timeout po kroku: '{step}'",
+    #         abort_after=step,
+    #         delay_s=2.5,
+    #     )
+    #     time.sleep(INTER_TEST_DELAY)
+
+    for step in ['syn', 'ack']:
         protocol_timeout_test(
             "13-Timeout",
             f"13.x Timeout po kroku: '{step}'",

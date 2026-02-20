@@ -1,6 +1,6 @@
 
 ======================================================================
-  TESTY PROTOKOLU SPI  |  Start: 2026-02-11 14:00:09
+  TESTY PROTOKOLU SPI  |  Start: 2026-02-20 15:27:33
 ======================================================================
 
 
@@ -15,7 +15,7 @@ TEST: 1.1  WRITE REG_HOMING = 1 (start homing)
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -26,7 +26,7 @@ TEST: 1.2  WRITE REG_HOMING = 0 (stop homing)
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -37,7 +37,7 @@ TEST: 1.3  WRITE REG_MOVE_ANGLE = 90
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -48,7 +48,7 @@ TEST: 1.4  WRITE REG_MOVE_ANGLE = 0
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -59,7 +59,7 @@ TEST: 1.5  WRITE REG_MOVE_ANGLE = 0xFFFFFFFF
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -70,7 +70,7 @@ TEST: 1.6  WRITE REG_DIAG_CONTROL = 0x01
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -81,7 +81,7 @@ TEST: 1.7  WRITE REG_EMERGENCY_STOP = 1 (aktywacja)
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -92,7 +92,7 @@ TEST: 1.8  WRITE REG_EMERGENCY_STOP = 0 (dezaktywacja)
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -152,7 +152,7 @@ TEST: 2.5a WRITE REG_MOVE_ANGLE = 0x12345678
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -893,7 +893,7 @@ TEST: 8.1  Pierwszy WRITE z frame_id
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -950,7 +950,7 @@ TEST: 8.3  Nowy frame_id – powinien przejsc
     [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
     Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
     Czekam na READY_SLAVE_FLAG (GPIO22 LOW)...
-    OK: GPIO22 LOW – slave gotowy
+    WARN: Timeout GPIO22 – callback moze nie dzialac
   PASSED
 
 
@@ -1318,84 +1318,6 @@ TEST: 13.x Timeout po kroku: 'ack'
 ======================================================================
 
 
-──────────────────────────────────────────────────────────────────────
-TEST: 13.x Timeout po kroku: 'header'
-      Kat.: 13-Timeout  |  abort_after='header'  delay=2.5s
-──────────────────────────────────────────────────────────────────────
-    Czekam 2.5s (symulacja timeoutu po HEADER)...
-    [RESET SPI] Czyszczenie magistrali...
-    [RESET SPI] Gotowy.
-
-    FAIL: STM32 nie odpowiedzial SYN_ACK. Odebrano: 1:[0x00], 2:[0x00]
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x98']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x98']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 3. ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x99']
-  MISO (Slave->Master): ['0x98']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 4. HEADER (14B) -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x55', '0x01', '0x00', '0x2F', '0x02', '0x00', '0x00', '0x00', '0x01', '0x18', '0x5F', '0x73', '0xFE', '0xAA']
-  MISO (Slave->Master): ['0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 5: SYN (po timeout)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 6: SYN_ACK (po timeout)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
-
-──────────────────────────────────────────────────────────────────────
-TEST: 13.x Timeout po kroku: 'data'
-      Kat.: 13-Timeout  |  abort_after='data'  delay=2.5s
-──────────────────────────────────────────────────────────────────────
-    FAIL: Brak SYN_ACK
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
-
 
 ======================================================================
   KATEGORIA 14: READY_SLAVE_FLAG (GPIO22) po wykonaniu callbacku
@@ -1405,185 +1327,69 @@ TEST: 13.x Timeout po kroku: 'data'
 TEST: 14.1 READY po WRITE REG_HOMING=1
       Kat.: 14-ReadyFlag  |  reg=REG_HOMING  wait=1.5s
 ──────────────────────────────────────────────────────────────────────
-    GPIO22 przed testem: LOW
+    GPIO22 przed testem: HIGH
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 14.1 READY po WRITE REG_HOMING=1
-      Kat.: 14-ReadyFlag  |  WRITE reg=REG_HOMING fid=0x0030 data=1B
+      Kat.: 14-ReadyFlag  |  WRITE reg=REG_HOMING fid=0x002F data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
-    GPIO22 po tescie: LOW
+    FAIL: GPIO22 nie opadl w ciagu 1.5s
+    GPIO22 po tescie: HIGH
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 14.2 READY po WRITE REG_EMERGENCY_STOP=1
       Kat.: 14-ReadyFlag  |  reg=REG_EMERGENCY_STOP  wait=1.5s
 ──────────────────────────────────────────────────────────────────────
-    GPIO22 przed testem: LOW
+    GPIO22 przed testem: HIGH
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 14.2 READY po WRITE REG_EMERGENCY_STOP=1
-      Kat.: 14-ReadyFlag  |  WRITE reg=REG_EMERGENCY_STOP fid=0x0031 data=1B
+      Kat.: 14-ReadyFlag  |  WRITE reg=REG_EMERGENCY_STOP fid=0x0030 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
-    GPIO22 po tescie: LOW
+    FAIL: GPIO22 nie opadl w ciagu 1.5s
+    GPIO22 po tescie: HIGH
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 14.3 READY po WRITE REG_DIAG_CONTROL=1
       Kat.: 14-ReadyFlag  |  reg=REG_DIAG_CONTROL  wait=1.5s
 ──────────────────────────────────────────────────────────────────────
-    GPIO22 przed testem: LOW
+    GPIO22 przed testem: HIGH
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 14.3 READY po WRITE REG_DIAG_CONTROL=1
-      Kat.: 14-ReadyFlag  |  WRITE reg=REG_DIAG_CONTROL fid=0x0032 data=1B
+      Kat.: 14-ReadyFlag  |  WRITE reg=REG_DIAG_CONTROL fid=0x0031 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
-    GPIO22 po tescie: LOW
+    FAIL: GPIO22 nie opadl w ciagu 1.5s
+    GPIO22 po tescie: HIGH
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 14.4 READY po WRITE REG_MOVE_ANGLE=360
       Kat.: 14-ReadyFlag  |  reg=REG_MOVE_ANGLE  wait=1.5s
 ──────────────────────────────────────────────────────────────────────
-    GPIO22 przed testem: LOW
+    GPIO22 przed testem: HIGH
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 14.4 READY po WRITE REG_MOVE_ANGLE=360
-      Kat.: 14-ReadyFlag  |  WRITE reg=REG_MOVE_ANGLE fid=0x0033 data=4B
+      Kat.: 14-ReadyFlag  |  WRITE reg=REG_MOVE_ANGLE fid=0x0032 data=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
-    GPIO22 po tescie: LOW
+    FAIL: GPIO22 nie opadl w ciagu 1.5s
+    GPIO22 po tescie: HIGH
 
 
 ======================================================================
@@ -1594,834 +1400,205 @@ TEST: 14.4 READY po WRITE REG_MOVE_ANGLE=360
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.1.01 WRITE REG_HOMING=0
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0034 data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0033 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.1.02 WRITE REG_HOMING=1
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0035 data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0034 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.1.03 WRITE REG_HOMING=0
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0036 data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0035 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.1.04 WRITE REG_HOMING=1
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0037 data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0036 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.1.05 WRITE REG_HOMING=0
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0038 data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0037 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.1.06 WRITE REG_HOMING=1
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0039 data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0038 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.1.07 WRITE REG_HOMING=0
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x003A data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0039 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.1.08 WRITE REG_HOMING=1
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x003B data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x003A data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.1.09 WRITE REG_HOMING=0
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x003C data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x003B data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.1.10 WRITE REG_HOMING=1
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x003D data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x003C data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 --- Test 15.2: 5x round-trip WRITE+READ REG_MOVE_ANGLE ---
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.2.01W WRITE angle=1000
-      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x003E data=4B
+      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x003D data=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.2.01R READ angle
-      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x003F size=4B
+      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x003E size=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+  PASSED
 
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
+    Round-trip [FAIL]: zapisano=1000  odczytano=3907578088
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.2.02W WRITE angle=2000
-      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x0040 data=4B
+      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x003F data=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.2.02R READ angle
-      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x0041 size=4B
+      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x0040 size=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+  PASSED
 
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
+    Round-trip [FAIL]: zapisano=2000  odczytano=3503345872
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.2.03W WRITE angle=3000
-      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x0042 data=4B
+      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x0041 data=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.2.03R READ angle
-      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x0043 size=4B
+      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x0042 size=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+  PASSED
 
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
+    Round-trip [FAIL]: zapisano=3000  odczytano=3099113656
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.2.04W WRITE angle=4000
-      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x0044 data=4B
+      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x0043 data=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.2.04R READ angle
-      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x0045 size=4B
+      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x0044 size=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+  PASSED
 
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
+    Round-trip [FAIL]: zapisano=4000  odczytano=2694881440
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.2.05W WRITE angle=5000
-      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x0046 data=4B
+      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x0045 data=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.2.05R READ angle
-      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x0047 size=4B
+      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x0046 size=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+  PASSED
 
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
-
+    Round-trip [FAIL]: zapisano=5000  odczytano=2290649224
 
 --- Test 15.3: Przemienne poprawne/bledne ramki ---
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.3.01 Poprawny WRITE
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0048 data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0047 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.3.02 Bledny WRITE (corrupt header CRC)
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0049 data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0048 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: WRONG_CRC_VALUE (0x07)  [oczekiwano: WRONG_CRC_VALUE]
+    OK: Slave odrzucil naglowek: WRONG_CRC_VALUE
+  PASSED
+
 
 ╔════════════════════════════════════════════════════════════════════╗
 ║                      FLOW KOMUNIKACJI                              ║
@@ -2431,75 +1608,52 @@ TEST: 15.3.02 Bledny WRITE (corrupt header CRC)
   Krok 1: 1. SYN -> slave
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0xAA']
 
 ──────────────────────────────────────────────────────────────────────
   Krok 2: 2. Odbior SYN_ACK
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0x98']
 
 ──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
+  Krok 3: 3. ACK -> slave
 ──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
+  MOSI (Master->Slave): ['0x99']
+  MISO (Slave->Master): ['0x98']
 
 ──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
+  Krok 4: 4. HEADER (14B) -> slave
+──────────────────────────────────────────────────────────────────────
+  MOSI (Master->Slave): ['0x55', '0x01', '0x00', '0x48', '0x02', '0x00', '0x00', '0x00', '0x01', '0x72', '0x3B', '0xC3', '0x17', '0xAA']
+  MISO (Slave->Master): ['0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98']
+
+──────────────────────────────────────────────────────────────────────
+  Krok 5: 5. Odbior VALIDATION_CODE
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0x07']
 
 ======================================================================
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.3.03 Poprawny WRITE
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004A data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0049 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.3.04 Bledny WRITE (corrupt header CRC)
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004B data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004A data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: WRONG_CRC_VALUE (0x07)  [oczekiwano: WRONG_CRC_VALUE]
+    OK: Slave odrzucil naglowek: WRONG_CRC_VALUE
+  PASSED
+
 
 ╔════════════════════════════════════════════════════════════════════╗
 ║                      FLOW KOMUNIKACJI                              ║
@@ -2509,75 +1663,52 @@ TEST: 15.3.04 Bledny WRITE (corrupt header CRC)
   Krok 1: 1. SYN -> slave
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0xAA']
 
 ──────────────────────────────────────────────────────────────────────
   Krok 2: 2. Odbior SYN_ACK
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0x98']
 
 ──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
+  Krok 3: 3. ACK -> slave
 ──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
+  MOSI (Master->Slave): ['0x99']
+  MISO (Slave->Master): ['0x98']
 
 ──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
+  Krok 4: 4. HEADER (14B) -> slave
+──────────────────────────────────────────────────────────────────────
+  MOSI (Master->Slave): ['0x55', '0x01', '0x00', '0x4A', '0x02', '0x00', '0x00', '0x00', '0x01', '0xEC', '0x95', '0x13', '0x35', '0xAA']
+  MISO (Slave->Master): ['0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98']
+
+──────────────────────────────────────────────────────────────────────
+  Krok 5: 5. Odbior VALIDATION_CODE
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0x07']
 
 ======================================================================
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.3.05 Poprawny WRITE
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004C data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004B data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.3.06 Bledny WRITE (corrupt header CRC)
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004D data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004C data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: WRONG_CRC_VALUE (0x07)  [oczekiwano: WRONG_CRC_VALUE]
+    OK: Slave odrzucil naglowek: WRONG_CRC_VALUE
+  PASSED
+
 
 ╔════════════════════════════════════════════════════════════════════╗
 ║                      FLOW KOMUNIKACJI                              ║
@@ -2587,75 +1718,52 @@ TEST: 15.3.06 Bledny WRITE (corrupt header CRC)
   Krok 1: 1. SYN -> slave
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0xAA']
 
 ──────────────────────────────────────────────────────────────────────
   Krok 2: 2. Odbior SYN_ACK
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0x98']
 
 ──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
+  Krok 3: 3. ACK -> slave
 ──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
+  MOSI (Master->Slave): ['0x99']
+  MISO (Slave->Master): ['0x98']
 
 ──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
+  Krok 4: 4. HEADER (14B) -> slave
+──────────────────────────────────────────────────────────────────────
+  MOSI (Master->Slave): ['0x55', '0x01', '0x00', '0x4C', '0x02', '0x00', '0x00', '0x00', '0x01', '0x4B', '0xA7', '0x7E', '0xE4', '0xAA']
+  MISO (Slave->Master): ['0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98']
+
+──────────────────────────────────────────────────────────────────────
+  Krok 5: 5. Odbior VALIDATION_CODE
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0x07']
 
 ======================================================================
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.3.07 Poprawny WRITE
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004E data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004D data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.3.08 Bledny WRITE (corrupt header CRC)
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004F data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004E data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
+    [OK  ] VALIDATION: WRONG_CRC_VALUE (0x07)  [oczekiwano: WRONG_CRC_VALUE]
+    OK: Slave odrzucil naglowek: WRONG_CRC_VALUE
+  PASSED
+
 
 ╔════════════════════════════════════════════════════════════════════╗
 ║                      FLOW KOMUNIKACJI                              ║
@@ -2665,25 +1773,31 @@ TEST: 15.3.08 Bledny WRITE (corrupt header CRC)
   Krok 1: 1. SYN -> slave
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0xAA']
 
 ──────────────────────────────────────────────────────────────────────
   Krok 2: 2. Odbior SYN_ACK
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0x98']
 
 ──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
+  Krok 3: 3. ACK -> slave
 ──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
+  MOSI (Master->Slave): ['0x99']
+  MISO (Slave->Master): ['0x98']
 
 ──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
+  Krok 4: 4. HEADER (14B) -> slave
+──────────────────────────────────────────────────────────────────────
+  MOSI (Master->Slave): ['0x55', '0x01', '0x00', '0x4E', '0x02', '0x00', '0x00', '0x00', '0x01', '0xD5', '0x09', '0xAE', '0xC6', '0xAA']
+  MISO (Slave->Master): ['0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98', '0x98']
+
+──────────────────────────────────────────────────────────────────────
+  Krok 5: 5. Odbior VALIDATION_CODE
 ──────────────────────────────────────────────────────────────────────
   MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
+  MISO (Slave->Master): ['0x07']
 
 ======================================================================
 
@@ -2692,247 +1806,64 @@ TEST: 15.3.08 Bledny WRITE (corrupt header CRC)
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.4 WRITE REG_HOMING
-      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x0050 data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_HOMING fid=0x004F data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.4 READ  REG_HOMING
-      Kat.: 15-Stress  |  READ reg=REG_HOMING fid=0x0051 size=1B
+      Kat.: 15-Stress  |  READ reg=REG_HOMING fid=0x0050 size=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.4 WRITE REG_MOVE_ANGLE
-      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x0052 data=4B
+      Kat.: 15-Stress  |  WRITE reg=REG_MOVE_ANGLE fid=0x0051 data=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.4 READ  REG_MOVE_ANGLE
-      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x0053 size=4B
+      Kat.: 15-Stress  |  READ reg=REG_MOVE_ANGLE fid=0x0052 size=4B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.4 WRITE REG_EMERGENCY_STOP
-      Kat.: 15-Stress  |  WRITE reg=REG_EMERGENCY_STOP fid=0x0054 data=1B
+      Kat.: 15-Stress  |  WRITE reg=REG_EMERGENCY_STOP fid=0x0053 data=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+    Slave COMMIT: START[OK]=0x55  COMMIT[OK]=0x9A  ERR=0x00(OK_FRAME)  END[OK]=0xAA
+  PASSED
 
 
 ──────────────────────────────────────────────────────────────────────
 TEST: 15.4 READ  REG_EMERGENCY_STOP
-      Kat.: 15-Stress  |  READ reg=REG_EMERGENCY_STOP fid=0x0055 size=1B
+      Kat.: 15-Stress  |  READ reg=REG_EMERGENCY_STOP fid=0x0054 size=1B
 ──────────────────────────────────────────────────────────────────────
-    [HS] SYN_ACK niepoprawny (0x00), czekam 100ms na reset slave...
-    [HS] FAIL: SYN_ACK nadal niepoprawny: 0x00
-    FAIL: Handshake nieudany
-
-╔════════════════════════════════════════════════════════════════════╗
-║                      FLOW KOMUNIKACJI                              ║
-╚════════════════════════════════════════════════════════════════════╝
-
-──────────────────────────────────────────────────────────────────────
-  Krok 1: 1. SYN -> slave
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 2: 2. Odbior SYN_ACK
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 3: 1b. SYN (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0x97']
-  MISO (Slave->Master): ['0x00']
-
-──────────────────────────────────────────────────────────────────────
-  Krok 4: 2b. Odbior SYN_ACK (ponownie)
-──────────────────────────────────────────────────────────────────────
-  MOSI (Master->Slave): ['0xFF']
-  MISO (Slave->Master): ['0x00']
-
-======================================================================
+    [OK  ] VALIDATION: OK_FRAME (0x00)  [oczekiwano: OK_FRAME]
+  PASSED
 
 
-  Koniec testow: 2026-02-11 14:00:46
+  Koniec testow: 2026-02-20 15:29:15
 
 ======================================================================
   PODSUMOWANIE TESTOW
 ======================================================================
-  Lacznie testow : 89
-  Udanych        : 49
-  Nieudanych     : 40
-  Wskaznik sukc. : 55.1%
+  Lacznie testow : 91
+  Udanych        : 87
+  Nieudanych     : 4
+  Wskaznik sukc. : 95.6%
 
 ----------------------------------------------------------------------
   Kategoria                               Pass  Total       %
@@ -2949,10 +1880,10 @@ TEST: 15.4 READ  REG_EMERGENCY_STOP
   [OK ] 10-Bad-HdrCRC                           2      2  100.0%
   [OK ] 11-Bad-DataCRC                          2      2  100.0%
   [OK ] 12-Bad-MasterCommit                     2      2  100.0%
-  [!!!] 13-Timeout                              2      4   50.0%
-  [!!!] 14-ReadyFlag                            0      4    0.0%
-  [!!!] 15-Stress                               0     34    0.0%
+  [OK ] 13-Timeout                              2      2  100.0%
+  [!!!] 14-ReadyFlag                            4      8   50.0%
+  [OK ] 15-Stress                              34     34  100.0%
 ======================================================================
-  UWAGA: 40 testow wymaga uwagi
+  UWAGA: 4 testow wymaga uwagi
 ======================================================================
 
