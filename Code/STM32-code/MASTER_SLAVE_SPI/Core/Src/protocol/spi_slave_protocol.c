@@ -251,9 +251,14 @@ void clear_communication_buffers(void)
 /**
  * @brief Reset and stop timeout timer
  */
-void timer_reset(void)
+void timer_reset(TIM_HandleTypeDef *htim)
 {
-    HAL_TIM_Base_Stop_IT(&htim1);
-    __HAL_TIM_SET_COUNTER(&htim1, 0);
-    timer_state = TIMER_START;
+    HAL_TIM_Base_Stop_IT(htim);
+    __HAL_TIM_SET_COUNTER(htim, 0);
+    if(htim == &htim1){
+    	timer_state = TIMER_START;
+    }
+    else if(htim == &htim4){
+    	HAL_TIM_Base_Start_IT(htim);
+    }
 }

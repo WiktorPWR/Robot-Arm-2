@@ -6,6 +6,7 @@
 
 #include "spi_slave_registers.h"
 #include "main.h"
+#include "hardware/motor.h"
 #include <string.h>
 
 /*******************************************************************************
@@ -14,6 +15,8 @@
 
 uint8_t reg_homing_data = 0;                    /**< Homing register: 0=idle, 1=start */
 uint32_t reg_move_angle_data = 0;               /**< Move angle register (4 bytes) */
+uint32_t reg_prev_move_angle_data = 0;			/**> It is prev vlaue of move register */
+uint8_t reg_enable_motor = 0;
 uint8_t reg_diag_control_data = 0;              /**< Diagnostics control register */
 uint32_t reg_diag_status_data = 0;              /**< Diagnostics status register */
 uint8_t reg_emergency_stop_data = 0;            /**< Emergency stop register */
@@ -49,6 +52,7 @@ void homing_callback(void)
     /* TODO: Implement homing operation */
     
     if (reg_homing_data == 1) {
+    	homing();
         // Przykład implementacji:
         // 1. Rozpocznij procedurę homing
         // 2. Ruch do pozycji home
@@ -57,7 +61,7 @@ void homing_callback(void)
         // 5. Wyzeruj pozycję
         
         // Po zakończeniu:
-        reg_homing_data = 0;
+        //reg_homing_data = 0;
     }
     
     /* Set GPIO to indicate ready for new frame */
@@ -80,6 +84,10 @@ void* move_angle_read(uint8_t *buf, uint8_t offset)
 
 void move_angle_write(uint8_t *buf, uint8_t offset, uint8_t value)
 {
+	//We copy old value to storage
+	reg_prev_move_angle_data = reg_move_angle_data;
+
+	//Then we can save our new value
     if (offset < 4) {
         /* Clear the byte at offset and set new value */
         uint32_t mask = ~(0xFF << (8 * (3 - offset)));
@@ -92,26 +100,61 @@ void move_angle_write(uint8_t *buf, uint8_t offset, uint8_t value)
     }
 }
 
+typedef union{
+	uint32_t u32;
+	float f;
+}U32F;
+
 void move_angle_callback(void)
 {
-    /* TODO: Implement angle movement operation */
+    U32F conv_1;
+    conv_1.u32 = reg_move_angle_data;
     
-    // Przykład implementacji:
-    // 1. Pobierz docelowy kąt
-    // int32_t target_angle = (int32_t)reg_move_angle_data;
+    U32F conv_2;
+    conv_2.u32 = reg_prev_move_angle_data;
     
-    // 2. Oblicz różnicę do aktualnej pozycji
-    // int32_t angle_diff = target_angle - current_position;
-    
-    // 3. Ustaw kierunek ruchu
-    // 4. Wykonaj ruch
-    // 5. Aktualizuj aktualną pozycję
-    
+    if(conv_2.f - conv_1.f > 0){
+    	move_via_angle(conv_1.f, RIGHT);
+    }else{
+    	move_via_angle(conv_1.f,LEFT);
+    }
+
+
     /* Set GPIO to indicate ready for new frame */
     HAL_GPIO_WritePin(READY_SLAVE_FLAG_GPIO_Port, 
                       READY_SLAVE_FLAG_Pin, 
                       GPIO_PIN_RESET);
 }
+
+/*******************************************************************************
+ * REGISTER IMPLEMENTATION - ENABLE CONTROL
+ ******************************************************************************/
+void enable_motor_write(uint8_t *buf, uint8_t offset, uint8_t value){
+	if(offset == 0){
+		reg_enable_motor = value;
+		register_flags.enable_changed = 1;
+	}
+}
+
+void* enable_motor_read(uint8_t *buf, uint8_t offset)
+{
+    if (offset == 0)
+    {
+        return (void*)&reg_enable_motor;
+    }
+
+    return NULL;
+}
+
+void enable_motor_callback(void){
+	if(reg_enable_motor != 0){
+		HAL_GPIO_WritePin(ENABLE_PIN_GPIO_Port, ENABLE_PIN_Pin, SET);
+	}else{
+		HAL_GPIO_WritePin(ENABLE_PIN_GPIO_Port, ENABLE_PIN_Pin, RESET);
+	}
+}
+
+
 
 /*******************************************************************************
  * REGISTER IMPLEMENTATION - DIAGNOSTICS CONTROL
@@ -220,6 +263,13 @@ const Register_Structure_t register_map[REG_COUNT] = {
         .size = 4,
         .flags = REGISTER_READ_WRITE
     },
+	[REG_ENABLE_MOTOR] = {
+		.read_function = enable_motor_read,
+		.write_function = enable_motor_write,
+		.callback = enable_motor_callback,
+		.size = 1,
+		.flags = REGISTER_READ_WRITE
+	},
     [REG_DIAG_CONTROL] = {
         .read_function = NULL,
         .write_function = diagnostics_control_write,
@@ -267,6 +317,13 @@ void monitor_register_changes(void)
         if (register_map[REG_MOVE_ANGLE].callback != NULL) {
             register_map[REG_MOVE_ANGLE].callback();
         }
+    }
+
+    if (register_flags.enable_changed) {
+    	register_flags.enable_changed = 0;
+    	if (register_map[REG_ENABLE_MOTOR].callback != NULL){
+    		register_map[REG_ENABLE_MOTOR].callback();
+    	}
     }
 
     /* Check diagnostics control register */

@@ -16,6 +16,7 @@
 
 extern SPI_HandleTypeDef hspi1;
 extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim4;
 extern CRC_HandleTypeDef hcrc;
 
 /*******************************************************************************
@@ -80,7 +81,7 @@ void clear_communication_buffers(void);
  * TIMER CONTROL FUNCTIONS
  ******************************************************************************/
 
-void timer_reset(void);
+void timer_reset(TIM_HandleTypeDef *htim);
 
 /*******************************************************************************
  * INTERRUPT CALLBACK PROTOTYPES

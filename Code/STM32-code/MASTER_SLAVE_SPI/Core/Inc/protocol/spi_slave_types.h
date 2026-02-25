@@ -115,6 +115,7 @@ typedef enum {
 typedef enum {
     REG_HOMING = 0,             /**< Homing operation control */
     REG_MOVE_ANGLE,             /**< Angle movement command */
+	REG_ENABLE_MOTOR,			/**< Motor enable command */
     REG_DIAG_CONTROL,           /**< Diagnostics control (write-only) */
     REG_DIAG_STATUS,            /**< Diagnostics status (read-only) */
     REG_EMERGENCY_STOP,         /**< Emergency stop control */
@@ -141,6 +142,7 @@ typedef enum {
 typedef struct {
     uint8_t homing_changed;         /**< Homing register changed flag */
     uint8_t move_angle_changed;     /**< Move angle register changed flag */
+    uint8_t enable_changed;         /**< Enable motor register changed flag */
     uint8_t diag_control_changed;   /**< Diagnostics control changed flag */
     uint8_t emergency_stop_changed; /**< Emergency stop changed flag */
 } Register_Change_Flags_t;

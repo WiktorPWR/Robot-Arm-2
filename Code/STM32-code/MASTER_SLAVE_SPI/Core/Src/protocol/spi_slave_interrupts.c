@@ -6,7 +6,7 @@
 
 #include "protocol/spi_slave_protocol.h"
 #include "spi_slave_registers.h"
-
+#include "hardware/motor.h"
 /*******************************************************************************
  * GPIO EXTI INTERRUPT CALLBACK (Chip Select)
  ******************************************************************************/
@@ -177,7 +177,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
             break;
     }
 
-    timer_reset();
+    timer_reset(&htim1);
 }
 
 /*******************************************************************************
@@ -228,7 +228,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
             break;
     }
 
-    timer_reset();
+    timer_reset(&htim1);
 }
 
 /*******************************************************************************
@@ -247,5 +247,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         clear_communication_buffers();
         process_stage = WAIT_SYN;
         timer_state = TIMER_START;
+    }
+    else if(htim == &htim4){
+    	new_cycle = 1;
     }
 }
