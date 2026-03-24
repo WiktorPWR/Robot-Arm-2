@@ -1,0 +1,11 @@
+build/
+Debug/
+Release/
+
+*.o
+*.elf
+*.bin
+*.map
+
+CMakeFiles/
+CMakeCache.txt
