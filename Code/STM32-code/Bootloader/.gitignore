@@ -2,6 +2,10 @@ build/
 Debug/
 Release/
 
+.vscode/
+.settings/
+.clangd/
+
 *.o
 *.elf
 *.bin
