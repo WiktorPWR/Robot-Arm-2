@@ -6,6 +6,5 @@
 #define HEADER_SIZE              0x1000      /**< Size of the application header (4 KB) */
 #define APPLICATION_START_ADDRESS (APPLICATION_HEADER_ADR + HEADER_SIZE) /**< Start address of the application firmware */
 
-void go_to_bootloader(void);
 
 #endif /* BOOTLOADER_CONFIG_H */

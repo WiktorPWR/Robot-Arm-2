@@ -1,4 +1,4 @@
-#include "bootloader_config.h"
+#include "bootloader_functions.h"
 
 void go_to_bootloader(void){
     // Deklarujemy wskaźnik na funkcję
