@@ -11,175 +11,154 @@
             min-height: 100vh;
             padding: 20px 0;
         }
+        .main-container { max-width: 1300px; }
 
-        .main-container {
-            max-width: 1200px;
-        }
-
+        /* ── Status cards ── */
         .status-card {
             border: 3px solid transparent;
             transition: all 0.3s ease;
             opacity: 0.5;
         }
-
         .status-card.active {
             opacity: 1;
-            border-color: currentColor;
             box-shadow: 0 0 20px rgba(0,0,0,0.2);
             transform: scale(1.05);
         }
+        .status-card.idle-card.active    { border-color:#0dcaf0; background:linear-gradient(135deg,#e0f7fa,#b2ebf2); }
+        .status-card.moving-card.active  { border-color:#198754; background:linear-gradient(135deg,#d4edda,#c3e6cb); }
+        .status-card.error-card.active   { border-color:#dc3545; background:linear-gradient(135deg,#f8d7da,#f5c6cb); }
+        .status-card.homing-card.active  { border-color:#fd7e14; background:linear-gradient(135deg,#ffe5d0,#ffd8b8); }
 
-        .status-card.idle-card.active {
-            border-color: #0dcaf0;
-            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
-        }
-
-        .status-card.moving-card.active {
-            border-color: #198754;
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-        }
-
-        .status-card.error-card.active {
-            border-color: #dc3545;
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-        }
-
-        .status-card.homing-card.active {
-            border-color: #fd7e14;
-            background: linear-gradient(135deg, #ffe5d0 0%, #ffd8b8 100%);
-        }
-
-        /* Wizualizacja ramienia */
+        /* ── Axis panel ── */
         .robot-arm-container {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .robot-arm {
-            position: relative;
-            height: 400px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .axis-segment {
-            display: flex;
-            align-items: center;
-            margin: 10px 0;
-            gap: 15px;
-        }
-
-        .axis-label {
-            font-weight: bold;
-            min-width: 80px;
-            font-size: 14px;
-        }
-
-        .axis-indicator {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: white;
-            font-size: 18px;
-            transition: all 0.3s ease;
-            border: 3px solid transparent;
-        }
-
-        .axis-indicator.not-homed {
-            background: #dc3545;
-            box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
-        }
-
-        .axis-indicator.homing {
-            background: #0dcaf0;
-            animation: pulse 1s infinite;
-            box-shadow: 0 0 20px rgba(13, 202, 240, 0.7);
-        }
-
-        .axis-indicator.homed {
-            background: #198754;
-            box-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .arm-line {
-            width: 4px;
-            height: 30px;
-            background: linear-gradient(to bottom, #6c757d, #adb5bd);
-            margin: 0 auto;
-        }
-
-        .control-section {
             background: white;
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        .axis-row {
+            display: grid;
+            grid-template-columns: 110px 56px 1fr 90px;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
         }
+        .axis-row:last-child { border-bottom: none; }
 
-        .btn {
-            border-radius: 10px;
-            font-weight: 600;
-            padding: 12px;
+        .axis-label { font-weight: 600; font-size: .85rem; color: #444; }
+
+        .axis-indicator {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: white; font-size: 16px;
             transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        .axis-indicator.not-homed { background:#dc3545; box-shadow:0 0 8px rgba(220,53,69,.4); }
+        .axis-indicator.homing    { background:#0dcaf0; animation:pulse 1s infinite; box-shadow:0 0 16px rgba(13,202,240,.6); }
+        .axis-indicator.homed     { background:#198754; box-shadow:0 0 8px rgba(25,135,84,.4); }
+
+        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+        /* Angle display + input */
+        .angle-display {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .angle-value {
+            font-family: 'Courier New', monospace;
+            font-size: .95rem;
+            font-weight: 700;
+            color: #333;
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 3px 8px;
+            border: 1px solid #dee2e6;
+            min-width: 80px;
+            text-align: right;
+        }
+        .angle-value.spi-err { color: #dc3545; border-color: #dc3545; background:#fff5f5; }
+
+        .homing-badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 12px;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .03em;
+        }
+        .homing-badge.done    { background:#d4edda; color:#155724; }
+        .homing-badge.pending { background:#f8d7da; color:#721c24; }
+        .homing-badge.active  { background:#fff3cd; color:#856404; }
+
+        /* Manual angle input per axis */
+        .angle-input-group {
+            display: flex;
+            gap: 4px;
+        }
+        .angle-input-group input {
+            width: 72px;
+            font-family: 'Courier New', monospace;
+            font-size: .82rem;
+            padding: 4px 6px;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            text-align: right;
+        }
+        .angle-input-group button {
+            padding: 4px 8px;
+            font-size: .75rem;
+            border-radius: 6px;
+            white-space: nowrap;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        /* ── Control section ── */
+        .control-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
+        .form-control:focus { border-color:#667eea; box-shadow:0 0 0 .2rem rgba(102,126,234,.25); }
+        .btn { border-radius: 10px; font-weight: 600; padding: 12px; transition: all .3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .btn-sm { padding: 4px 10px !important; }
 
         .waiting-indicator {
-            display: none;
-            color: #fd7e14;
-            font-weight: bold;
-            margin: 10px 0;
-            animation: blink 1s infinite;
+            display: none; color: #fd7e14; font-weight: bold;
+            margin: 10px 0; animation: blink 1s infinite;
         }
-
-        .waiting-indicator.show {
-            display: block;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
+        .waiting-indicator.show { display: block; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
         .section-title {
-            color: #667eea;
-            font-weight: bold;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
+            color: #667eea; font-weight: bold;
+            margin-bottom: 18px; padding-bottom: 10px;
             border-bottom: 3px solid #667eea;
         }
+        input[type="number"] { font-family: 'Courier New', monospace; }
 
-        input[type="number"] {
-            font-family: 'Courier New', monospace;
+        .ik-warning {
+            display: none;
+            font-size: .8rem;
+            color: #856404;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 6px 10px;
+            margin-top: 6px;
         }
+        .ik-warning.show { display: block; }
     </style>
 </head>
 
 <body>
-
 <div class="container main-container">
-    
+
     <!-- NAGŁÓWEK -->
     <div class="text-center mb-4">
         <h1 class="text-white mb-2">🤖 Robot Master Control Panel</h1>
@@ -227,62 +206,117 @@
     </div>
 
     <div class="row g-4">
-        
-        <!-- WIZUALIZACJA RAMIENIA -->
+
+        <!-- ── PANEL OSI ── -->
         <div class="col-lg-5">
             <div class="robot-arm-container">
                 <h4 class="section-title">📊 Status Osi</h4>
-                <div class="robot-arm">
-                    
-                    <div class="axis-segment">
-                        <span class="axis-label">Oś 6 (TCP):</span>
-                        <div class="axis-indicator not-homed" id="axis5">6</div>
-                    </div>
-                    <div class="arm-line"></div>
-                    
-                    <div class="axis-segment">
-                        <span class="axis-label">Oś 5:</span>
-                        <div class="axis-indicator not-homed" id="axis4">5</div>
-                    </div>
-                    <div class="arm-line"></div>
-                    
-                    <div class="axis-segment">
-                        <span class="axis-label">Oś 4:</span>
-                        <div class="axis-indicator not-homed" id="axis3">4</div>
-                    </div>
-                    <div class="arm-line"></div>
-                    
-                    <div class="axis-segment">
-                        <span class="axis-label">Oś 3:</span>
-                        <div class="axis-indicator not-homed" id="axis2">3</div>
-                    </div>
-                    <div class="arm-line"></div>
-                    
-                    <div class="axis-segment">
-                        <span class="axis-label">Oś 2:</span>
-                        <div class="axis-indicator not-homed" id="axis1">2</div>
-                    </div>
-                    <div class="arm-line"></div>
-                    
-                    <div class="axis-segment">
-                        <span class="axis-label">Oś 1 (Base):</span>
-                        <div class="axis-indicator not-homed" id="axis0">1</div>
-                    </div>
-                    
+
+                <!-- Nagłówek kolumn -->
+                <div class="axis-row" style="font-size:.72rem;font-weight:700;color:#888;padding-bottom:4px;border-bottom:2px solid #dee2e6">
+                    <div>Oś</div>
+                    <div style="text-align:center">Status</div>
+                    <div>Kąt aktualny</div>
+                    <div>Homing</div>
                 </div>
 
-                <button class="btn btn-warning w-100 mt-3" id="homeBtn" onclick="homeRobot()">
+                <!-- Oś 6 (TCP) -->
+                <div class="axis-row">
+                    <span class="axis-label">Oś 6 (TCP)</span>
+                    <div class="axis-indicator not-homed" id="axis5">6</div>
+                    <div class="angle-display">
+                        <span class="angle-value" id="angle5">—°</span>
+                        <div class="angle-input-group">
+                            <input type="number" id="manualAngle5" step="0.1" placeholder="°">
+                            <button class="btn btn-outline-primary btn-sm" onclick="sendAxisAngle(5)">▶</button>
+                        </div>
+                    </div>
+                    <span class="homing-badge pending" id="homingBadge5">NOT HOMED</span>
+                </div>
+
+                <!-- Oś 5 -->
+                <div class="axis-row">
+                    <span class="axis-label">Oś 5</span>
+                    <div class="axis-indicator not-homed" id="axis4">5</div>
+                    <div class="angle-display">
+                        <span class="angle-value" id="angle4">—°</span>
+                        <div class="angle-input-group">
+                            <input type="number" id="manualAngle4" step="0.1" placeholder="°">
+                            <button class="btn btn-outline-primary btn-sm" onclick="sendAxisAngle(4)">▶</button>
+                        </div>
+                    </div>
+                    <span class="homing-badge pending" id="homingBadge4">NOT HOMED</span>
+                </div>
+
+                <!-- Oś 4 -->
+                <div class="axis-row">
+                    <span class="axis-label">Oś 4</span>
+                    <div class="axis-indicator not-homed" id="axis3">4</div>
+                    <div class="angle-display">
+                        <span class="angle-value" id="angle3">—°</span>
+                        <div class="angle-input-group">
+                            <input type="number" id="manualAngle3" step="0.1" placeholder="°">
+                            <button class="btn btn-outline-primary btn-sm" onclick="sendAxisAngle(3)">▶</button>
+                        </div>
+                    </div>
+                    <span class="homing-badge pending" id="homingBadge3">NOT HOMED</span>
+                </div>
+
+                <!-- Oś 3 -->
+                <div class="axis-row">
+                    <span class="axis-label">Oś 3</span>
+                    <div class="axis-indicator not-homed" id="axis2">3</div>
+                    <div class="angle-display">
+                        <span class="angle-value" id="angle2">—°</span>
+                        <div class="angle-input-group">
+                            <input type="number" id="manualAngle2" step="0.1" placeholder="°">
+                            <button class="btn btn-outline-primary btn-sm" onclick="sendAxisAngle(2)">▶</button>
+                        </div>
+                    </div>
+                    <span class="homing-badge pending" id="homingBadge2">NOT HOMED</span>
+                </div>
+
+                <!-- Oś 2 -->
+                <div class="axis-row">
+                    <span class="axis-label">Oś 2</span>
+                    <div class="axis-indicator not-homed" id="axis1">2</div>
+                    <div class="angle-display">
+                        <span class="angle-value" id="angle1">—°</span>
+                        <div class="angle-input-group">
+                            <input type="number" id="manualAngle1" step="0.1" placeholder="°">
+                            <button class="btn btn-outline-primary btn-sm" onclick="sendAxisAngle(1)">▶</button>
+                        </div>
+                    </div>
+                    <span class="homing-badge pending" id="homingBadge1">NOT HOMED</span>
+                </div>
+
+                <!-- Oś 1 (Base) -->
+                <div class="axis-row">
+                    <span class="axis-label">Oś 1 (Base)</span>
+                    <div class="axis-indicator not-homed" id="axis0">1</div>
+                    <div class="angle-display">
+                        <span class="angle-value" id="angle0">—°</span>
+                        <div class="angle-input-group">
+                            <input type="number" id="manualAngle0" step="0.1" placeholder="°">
+                            <button class="btn btn-outline-primary btn-sm" onclick="sendAxisAngle(0)">▶</button>
+                        </div>
+                    </div>
+                    <span class="homing-badge pending" id="homingBadge0">NOT HOMED</span>
+                </div>
+
+                <button class="btn btn-warning w-100 mt-4" id="homeBtn" onclick="homeRobot()">
                     🏠 WYKONAJ HOMING WSZYSTKICH OSI
                 </button>
             </div>
         </div>
 
-        <!-- STEROWANIE -->
+        <!-- ── STEROWANIE ── -->
         <div class="col-lg-7">
+
+            <!-- Sterowanie XYZ + RPY (IK) -->
             <div class="control-section mb-3">
-                <h4 class="section-title">🎮 Sterowanie Manualne</h4>
-                
-                <!-- Pozycja XYZ -->
+                <h4 class="section-title">🎮 Sterowanie – Pozycja TCP (IK)</h4>
+
                 <div class="mb-3">
                     <label class="form-label fw-bold">Pozycja (mm):</label>
                     <div class="row g-2">
@@ -301,35 +335,38 @@
                     </div>
                 </div>
 
-                <!-- Rotacja -->
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Rotacja (stopnie):</label>
+                    <label class="form-label fw-bold">Orientacja – Roll/Pitch/Yaw (°):</label>
                     <div class="row g-2">
                         <div class="col-4">
-                            <label class="form-label small">RX:</label>
+                            <label class="form-label small">RX (Roll):</label>
                             <input id="rx" class="form-control" type="number" step="0.1" value="0">
                         </div>
                         <div class="col-4">
-                            <label class="form-label small">RY:</label>
+                            <label class="form-label small">RY (Pitch):</label>
                             <input id="ry" class="form-control" type="number" step="0.1" value="0">
                         </div>
                         <div class="col-4">
-                            <label class="form-label small">RZ:</label>
+                            <label class="form-label small">RZ (Yaw):</label>
                             <input id="rz" class="form-control" type="number" step="0.1" value="0">
                         </div>
                     </div>
                 </div>
 
+                <div class="ik-warning" id="ikWarning">
+                    ⚠️ IK: brak zbieżności – robot wykona najlepsze przybliżenie
+                </div>
+
                 <div class="waiting-indicator" id="waitingIndicator">
-                    ⏳ Waiting for moving...
+                    ⏳ Waiting for move...
                 </div>
 
                 <button class="btn btn-success w-100" onclick="moveRobot()">
-                    ▶️ WYKONAJ RUCH
+                    ▶️ WYKONAJ RUCH (IK)
                 </button>
             </div>
 
-            <!-- TRAJEKTORIA -->
+            <!-- Trajektoria -->
             <div class="control-section mb-3">
                 <h4 class="section-title">📈 Trajektoria</h4>
                 <div class="mb-3">
@@ -342,72 +379,71 @@
                 </button>
             </div>
 
-            <!-- EMERGENCY STOP -->
+            <!-- Emergency stop + Clear -->
             <div class="control-section">
-                <button class="btn btn-danger w-100 btn-lg" onclick="estop()">
-                    🛑 EMERGENCY STOP
-                </button>
+                <div class="row g-2">
+                    <div class="col-8">
+                        <button class="btn btn-danger w-100 btn-lg" onclick="estop()">
+                            🛑 EMERGENCY STOP
+                        </button>
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-outline-secondary w-100 btn-lg" onclick="estopClear()">
+                            ✅ CLEAR
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
 
+        </div>
     </div>
 </div>
 
 <script>
+// ============================================================
+// Stan lokalny
+// ============================================================
 let currentStatus = "IDLE";
 
+// ============================================================
+// Polling /status (co 200ms)
+// ============================================================
 async function updateStatus() {
     try {
         const r = await fetch("/status");
         const s = await r.json();
 
-        // Aktualizacja kafelków statusu
         updateStatusCards(s.status);
-
-        // Aktualizacja wizualizacji osi
-        updateAxisVisualization(s.axes_homed, s.current_homing_axis);
-
-        // Aktualizacja przycisku homing
+        updateAxisPanel(s.axes_homed, s.current_homing_axis, s.angles, s.angles_ok);
         updateHomingButton(s.homed);
 
-        // Pokazanie "waiting for moving"
         if (currentStatus === "MOVING" && s.status === "IDLE") {
             document.getElementById("waitingIndicator").classList.remove("show");
         }
-
         currentStatus = s.status;
 
-    } catch (error) {
-        console.error("Błąd aktualizacji statusu:", error);
+    } catch (err) {
+        console.error("Błąd /status:", err);
     }
 }
 
+// ============================================================
+// Aktualizacja kafelków statusu
+// ============================================================
 function updateStatusCards(status) {
-    // Usuń active ze wszystkich
-    document.querySelectorAll('.status-card').forEach(card => {
-        card.classList.remove('active');
-    });
-
-    // Dodaj active do odpowiedniego
-    if (status === "IDLE") {
-        document.getElementById("idleCard").classList.add("active");
-    } else if (status === "MOVING") {
-        document.getElementById("movingCard").classList.add("active");
-    } else if (status === "HOMING") {
-        document.getElementById("homingCard").classList.add("active");
-    } else if (status === "ERROR") {
-        document.getElementById("errorCard").classList.add("active");
-    }
+    document.querySelectorAll('.status-card').forEach(c => c.classList.remove('active'));
+    const map = { IDLE:"idleCard", MOVING:"movingCard", HOMING:"homingCard", ERROR:"errorCard" };
+    if (map[status]) document.getElementById(map[status]).classList.add("active");
 }
 
-function updateAxisVisualization(axesHomed, currentHomingAxis) {
+// ============================================================
+// Aktualizacja panelu osi: kolor koła, kąt, badge homing
+// ============================================================
+function updateAxisPanel(axesHomed, currentHomingAxis, angles, anglesOk) {
     for (let i = 0; i < 6; i++) {
+        // ── Kolor koła ──
         const axisEl = document.getElementById(`axis${i}`);
-        
-        // Usuń wszystkie klasy statusu
         axisEl.classList.remove('not-homed', 'homing', 'homed');
-        
-        // Ustaw odpowiednią klasę
         if (currentHomingAxis === i) {
             axisEl.classList.add('homing');
         } else if (axesHomed[i]) {
@@ -415,53 +451,128 @@ function updateAxisVisualization(axesHomed, currentHomingAxis) {
         } else {
             axisEl.classList.add('not-homed');
         }
+
+        // ── Wyświetlenie kąta ──
+        const angleEl = document.getElementById(`angle${i}`);
+        if (angles && angles[i] !== undefined) {
+            angleEl.textContent = angles[i].toFixed(2) + "°";
+            if (anglesOk && !anglesOk[i]) {
+                angleEl.classList.add('spi-err');
+                angleEl.title = "Błąd odczytu SPI – wartość z ostatniego zapisu";
+            } else {
+                angleEl.classList.remove('spi-err');
+                angleEl.title = "";
+            }
+        }
+
+        // ── Badge homing ──
+        const badge = document.getElementById(`homingBadge${i}`);
+        badge.classList.remove('done', 'pending', 'active');
+        if (currentHomingAxis === i) {
+            badge.classList.add('active');
+            badge.textContent = "HOMING…";
+        } else if (axesHomed[i]) {
+            badge.classList.add('done');
+            badge.textContent = "HOMED ✓";
+        } else {
+            badge.classList.add('pending');
+            badge.textContent = "NOT HOMED";
+        }
     }
 }
 
+// ============================================================
+// Aktualizacja przycisku homing
+// ============================================================
 function updateHomingButton(isHomed) {
-    const homeBtn = document.getElementById("homeBtn");
+    const btn = document.getElementById("homeBtn");
     if (isHomed) {
-        homeBtn.classList.remove("btn-warning");
-        homeBtn.classList.add("btn-success");
-        homeBtn.innerHTML = "✅ WSZYSTKIE OSI SKALIBROWANE";
+        btn.classList.replace("btn-warning", "btn-success");
+        btn.innerHTML = "✅ WSZYSTKIE OSI SKALIBROWANE";
     } else {
-        homeBtn.classList.remove("btn-success");
-        homeBtn.classList.add("btn-warning");
-        homeBtn.innerHTML = "🏠 WYKONAJ HOMING WSZYSTKICH OSI";
+        btn.classList.replace("btn-success", "btn-warning");
+        btn.innerHTML = "🏠 WYKONAJ HOMING WSZYSTKICH OSI";
     }
 }
 
+// ============================================================
+// Ruch przez IK
+// ============================================================
 async function moveRobot() {
-    // Pokaż indicator oczekiwania
     document.getElementById("waitingIndicator").classList.add("show");
+    document.getElementById("ikWarning").classList.remove("show");
 
-    await fetch("/move", {
+    const resp = await fetch("/move", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            x: parseFloat(document.getElementById("x").value),
-            y: parseFloat(document.getElementById("y").value),
-            z: parseFloat(document.getElementById("z").value),
+            x:  parseFloat(document.getElementById("x").value),
+            y:  parseFloat(document.getElementById("y").value),
+            z:  parseFloat(document.getElementById("z").value),
             rx: parseFloat(document.getElementById("rx").value),
             ry: parseFloat(document.getElementById("ry").value),
-            rz: parseFloat(document.getElementById("rz").value)
+            rz: parseFloat(document.getElementById("rz").value),
         })
     });
+
+    const data = await resp.json();
+    if (!data.ok) {
+        document.getElementById("waitingIndicator").classList.remove("show");
+        alert("Błąd: " + (data.error || "nieznany"));
+    }
+    if (data.ik_warning) {
+        document.getElementById("ikWarning").classList.add("show");
+    }
 }
 
+// ============================================================
+// Ręczne wysłanie kąta na pojedynczą oś
+// ============================================================
+async function sendAxisAngle(axisIndex) {
+    const input = document.getElementById(`manualAngle${axisIndex}`);
+    const angle = parseFloat(input.value);
+
+    if (isNaN(angle)) {
+        alert(`Podaj kąt dla osi ${axisIndex + 1}`);
+        return;
+    }
+
+    const resp = await fetch("/move_axis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ axis: axisIndex, angle: angle })
+    });
+
+    const data = await resp.json();
+    if (!data.ok) {
+        alert(`Błąd osi ${axisIndex + 1}: ` + (data.error || "nieznany"));
+    }
+}
+
+// ============================================================
+// Homing
+// ============================================================
 async function homeRobot() {
-    await fetch("/home", {method: "POST"});
+    await fetch("/home", { method: "POST" });
 }
 
+// ============================================================
+// Emergency stop
+// ============================================================
 async function estop() {
     document.getElementById("waitingIndicator").classList.remove("show");
-    await fetch("/estop", {method: "POST"});
+    await fetch("/estop", { method: "POST" });
 }
 
-// Aktualizuj status co 200ms (szybciej dla płynniejszej animacji)
+async function estopClear() {
+    await fetch("/estop_clear", { method: "POST" });
+}
+
+// ============================================================
+// Start pollingu
+// ============================================================
 setInterval(updateStatus, 200);
 updateStatus();
 </script>
-
 </body>
 </html>
