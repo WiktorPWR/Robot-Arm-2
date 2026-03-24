@@ -7,6 +7,7 @@
 #include "spi_slave_registers.h"
 #include "main.h"
 #include "hardware/motor.h"
+#include "bootloader/bootloader_config.h"
 #include <string.h>
 
 /*******************************************************************************
@@ -20,6 +21,8 @@ uint8_t reg_enable_motor = 0;
 uint8_t reg_diag_control_data = 0;              /**< Diagnostics control register */
 uint32_t reg_diag_status_data = 0;              /**< Diagnostics status register */
 uint8_t reg_emergency_stop_data = 0;            /**< Emergency stop register */
+uint8_t reg_firmware_update_data = 0;          /**< Firmware update register */
+
 
 /*******************************************************************************
  * REGISTER CHANGE FLAGS (DEFINITION)
@@ -244,6 +247,27 @@ void emergency_stop_callback(void)
                       GPIO_PIN_RESET);
 }
 
+
+/**************************************************************
+* REGISTER IMPLEMENTATION - FIRMWARE UPDATE
+ ******************************************************************************/
+
+void firmware_update_write(uint8_t *buf, uint8_t offset, uint8_t value){
+    if(buf != NULL && offset == 0){
+        reg_firmware_update_data = value;
+        register_flags.firmware_update_changed = 1;
+    }
+    return NULL; /* TODO: Implement firmware update write function */
+}
+
+void firmware_update_callback(void){
+    if(reg_firmware_update_data == 1){
+        go_to_bootloader();
+    }
+    return NULL; /* TODO: Implement firmware update callback */
+}
+
+
 /*******************************************************************************
  * REGISTER MAP DEFINITION
  ******************************************************************************/
@@ -290,7 +314,15 @@ const Register_Structure_t register_map[REG_COUNT] = {
         .callback = emergency_stop_callback,
         .size = 1,
         .flags = REGISTER_READ_WRITE
+    },
+    [REG_FIRMWARE_UPDATE] = {
+        .read_function = NULL,
+        .write_function = firmware_update_write, /* TODO: Implement firmware update write function */
+        .callback = firmware_update_callback, /* TODO: Implement firmware update callback */
+        .size = 1,
+        .flags = REGISTER_WRITE
     }
+    
 };
 
 /*******************************************************************************
@@ -339,6 +371,13 @@ void monitor_register_changes(void)
         register_flags.emergency_stop_changed = 0;
         if (register_map[REG_EMERGENCY_STOP].callback != NULL) {
             register_map[REG_EMERGENCY_STOP].callback();
+        }
+    }
+
+    if (register_flags.firmware_update_changed) {
+        register_flags.firmware_update_changed = 0;
+        if (register_map[REG_FIRMWARE_UPDATE].callback != NULL) {
+            register_map[REG_FIRMWARE_UPDATE].callback();
         }
     }
 }

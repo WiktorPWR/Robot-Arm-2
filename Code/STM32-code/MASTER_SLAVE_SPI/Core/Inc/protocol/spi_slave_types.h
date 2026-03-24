@@ -119,6 +119,7 @@ typedef enum {
     REG_DIAG_CONTROL,           /**< Diagnostics control (write-only) */
     REG_DIAG_STATUS,            /**< Diagnostics status (read-only) */
     REG_EMERGENCY_STOP,         /**< Emergency stop control */
+    REG_FIRMWARE_UPDATE,          /**< Firmware update control (write-only) */
     
     REG_COUNT                   /**< Total number of registers */
 } Register_ID_t;
