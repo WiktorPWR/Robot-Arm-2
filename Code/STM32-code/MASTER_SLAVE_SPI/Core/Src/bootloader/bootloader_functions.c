@@ -1,4 +1,24 @@
 #include "bootloader_functions.h"
+#include "main.h"
+
+void validate_application(void){
+    // Tutaj możesz dodać kod do weryfikacji aplikacji, np. sprawdzenie sumy kontrolnej
+}
+
+void jump_to_application(void){
+    // Tutaj możesz dodać kod do skoku do aplikacji, np. ustawienie wskaźnika stosu i skok do adresu reset handlera
+}
+
+HAL_StatusTypeDef flash_erase_application(void){
+    // Tutaj możesz dodać kod do wymazywania pamięci flash, np. używając funkcji HAL_FLASH_Erase
+    return HAL_OK; // Zwróć odpowiedni status
+}
+
+HAL_StatusTypeDef flash_write_application(uint32_t address, uint8_t* data, uint32_t length){
+    // Tutaj możesz dodać kod do zapisywania danych do pamięci flash, np. używając funkcji HAL_FLASH_Program
+    return HAL_OK; // Zwróć odpowiedni status
+}
+
 
 void go_to_bootloader(void){
     // Deklarujemy wskaźnik na funkcję
