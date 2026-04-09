@@ -1,13 +1,12 @@
 #include "motor_setup_functions.h"
 #include "main.h"
+#include "stm32f4xx.h"
 #include "stm32f4xx_hal_tim.h"
 #include <stdint.h>
 
 
 static const uint16_t DUTY_CYCLE = 50;
 static const uint16_t START_FREQUENCY = 1000; // 1 kHz
-
-#define CCR_CALCULATION(frequency, timer) ((HAL_RCC_GetPCLK1Freq() / (frequency * (timer->Instance->PSC + 1))) - 1)
 
 //This is functionality for state machine of the motor
 typedef enum MOTOR_STATE{
@@ -22,8 +21,9 @@ MOTOR_STATE motor_state_getter(void){
     return motor_state;
 };
 
-static void motor_state_setter(MOTOR_STATE new_motor_state){
+static MOTOR_STATE motor_state_setter(MOTOR_STATE new_motor_state){
     motor_state = new_motor_state;
+    return motor_state;
 }
 
 
@@ -41,8 +41,9 @@ MOTOR_DIRECTION motor_direction_getter(void){
     return motor_direction;
 };
 
-void motor_direction_setter(MOTOR_DIRECTION new_motor_direction){
+MOTOR_DIRECTION motor_direction_setter(MOTOR_DIRECTION new_motor_direction){
     motor_direction = new_motor_direction;
+    return motor_direction;
 }
 
 //This part is for enable motor or not
@@ -59,11 +60,15 @@ MOTOR_ENABLE motor_enable_getter(void){
     return motor_enable;
 };
 
-void motor_enable_setter(MOTOR_ENABLE new_motor_enable){
+MOTOR_ENABLE motor_enable_setter(MOTOR_ENABLE new_motor_enable){
     motor_enable = new_motor_enable;
+    return motor_enable;
 }
 
-
+//This function always set out value to 50% duty cycle, so we can change the frequency without changing the duty cycle
+static inline void DUTY_CYCLE_CALCULATION(TIM_HandleTypeDef *timer){
+    timer->Instance->CCR1 = (timer->Instance->ARR * DUTY_CYCLE / 100); // Calculate CCR value for desired duty cycle
+}
 
 //This part is for setting speed of the motor
 HAL_StatusTypeDef motor_speed_setter(uint16_t frequency, TIM_HandleTypeDef *timer){
@@ -89,6 +94,8 @@ HAL_StatusTypeDef motor_speed_setter(uint16_t frequency, TIM_HandleTypeDef *time
         //Then we calculate the prescaler value based on the desired frequency and the timer clock frequency
         uint32_t APB1_CLK = HAL_RCC_GetPCLK1Freq();
         timer->Instance->PSC = ((APB1_CLK / START_FREQUENCY) - 1); // Calculate prescaler for 1 kHz frequency
+    
+        DUTY_CYCLE_CALCULATION(timer); // Calculate CCR value for 50% duty cycle
 
         //When we have this set we can start PWM signal generation
         if(HAL_TIM_PWM_Start(timer, TIM_CHANNEL_1) != HAL_OK){
@@ -105,7 +112,44 @@ HAL_StatusTypeDef motor_speed_setter(uint16_t frequency, TIM_HandleTypeDef *time
     if(motor_state_getter() == MOTOR_RUNNING){
         uint32_t APB1_CLK = HAL_RCC_GetPCLK1Freq();
         timer->Instance->ARR = (APB1_CLK / (frequency * (timer->Instance->PSC + 1))) - 1; // Calculate ARR value for desired frequency
+        DUTY_CYCLE_CALCULATION(timer); // Calculate CCR value for 50% duty cycle
     }
 
     return HAL_OK;
 }
+
+
+//Motor structure 
+
+typedef enum MOTOR_PIN{
+    DIRECTION,
+    STEP,
+    ENABLE
+};
+
+
+struct Motor_Control{
+    MOTOR_PIN motor_pin;
+    uint8_t (*motor_direction_setter)(uint8_t motor_new_state);
+    uint8_t (*motor_direction_getter)(void);
+};
+
+struct Motor_Control motor_control[3] = {
+    [DIRECTION] = {
+        .motor_pin = DIRECTION,
+        .motor_direction_setter = motor_direction_setter,
+        .motor_direction_getter = motor_direction_getter
+    },
+    [STEP] = {
+        .motor_pin = STEP,
+        .motor_direction_setter = motor_speed_setter, // No setter for step pin
+        .motor_direction_getter = NULL  // No getter for step pin
+    },
+    [ENABLE] = {
+        .motor_pin = ENABLE,
+        .motor_direction_setter = motor_enable_setter,
+        .motor_direction_getter = motor_enable_getter
+    }
+};
+
+

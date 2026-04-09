@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "motor_control/motor_setup_functions.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
