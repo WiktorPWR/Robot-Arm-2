@@ -102,7 +102,6 @@ HAL_StatusTypeDef motor_speed_setter(uint16_t frequency){
 
 
 //Motor structure 
-
 MOTOR motor = {
     .enable_control = {
         .pin = ENABLE_PIN,

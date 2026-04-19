@@ -1,0 +1,6 @@
+#ifndef MOTOR_TRAJECTORY_MODELING_H
+#define MOTOR_TRAJECTORY_MODELING_H
+
+
+
+#endif
