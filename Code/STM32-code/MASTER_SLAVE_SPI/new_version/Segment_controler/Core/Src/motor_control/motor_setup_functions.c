@@ -6,6 +6,8 @@ static const uint16_t START_FREQUENCY = 1000; // 1 kHz
 
 extern TIM_HandleTypeDef htim3; // We need this to set the speed of the motor, we can change it to other timer if we want to use different timer for motor control
 
+
+
 //This is functionality for state machine of the motor
 
 static MOTOR_STATE_FLAGS motor_state = MOTOR_STOP;
@@ -14,7 +16,7 @@ MOTOR_STATE_FLAGS motor_state_getter(void){
     return motor_state;
 };
 
-static MOTOR_STATE_FLAGS motor_state_setter(MOTOR_STATE_FLAGS new_motor_state){
+MOTOR_STATE_FLAGS motor_state_setter(MOTOR_STATE_FLAGS new_motor_state){
     motor_state = new_motor_state;
     return motor_state;
 }
@@ -101,8 +103,9 @@ HAL_StatusTypeDef motor_speed_setter(uint16_t frequency){
 }
 
 
+
 //Motor structure 
-MOTOR motor = {
+MOTOR_DRIVER motor_driver = {
     .enable_control = {
         .pin = ENABLE_PIN,
         .motor_enable_getter = motor_enable_getter,

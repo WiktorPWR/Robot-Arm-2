@@ -49,13 +49,16 @@ typedef struct{
     HAL_StatusTypeDef (*motor_speed_setter)(uint16_t frequency);
 }Motor_STEP_Control;
 
+MOTOR_STATE_FLAGS motor_state_getter(void);
+
+MOTOR_STATE_FLAGS motor_state_setter(MOTOR_STATE_FLAGS new_motor_state);
 
 typedef struct{
     Motor_ENABLE_Control enable_control;
     Motor_DIRECTION_Control direction_control;
     Motor_STEP_Control step_control;
-}MOTOR;
+}MOTOR_DRIVER;
 
-extern MOTOR motor;
+extern MOTOR_DRIVER motor_driver;
 
 #endif /* MOTOR_SETUP_FUNCTIONS_H */
