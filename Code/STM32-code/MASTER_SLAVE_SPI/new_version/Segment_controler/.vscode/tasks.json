@@ -1,0 +1,47 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Check MISRA - Full Project",
+            "type": "shell",
+            "command": "cppcheck",
+            "args": [
+                "--addon=misra.json",
+                "--enable=all",
+                "--inline-suppr",
+                // --- GLOBALNE WYCISZENIE (Ignore) ---
+                "--suppress=misra-config",
+                "--suppress=*:*Drivers*",
+                "--suppress=*:*Middlewares*",
+                // --- WYKLUCZENIE GENEROWANYCH PLIKÓW (Uproszczone) ---
+                // Używamy gwiazdek z obu stron, żeby olać różnice w ukośnikach \ vs /
+                "--suppress=*:*stm32f4xx_it*",
+                "--suppress=*:*system_stm32f4xx*",
+                "--suppress=*:*stm32f4xx_hal_msp*",
+                "--suppress=*:*sysmem*",
+                "--suppress=*:*syscalls*",
+                "--suppress=*:*stm32f4xx_hal_conf*",
+                "--suppress=*:*Drivers\\STM32F4xx_HAL_Driver\\Inc\\stm32f4xx_hal.h*",
+                // --- Ścieżki do nagłówków ---
+                "-I",
+                "Core/Inc",
+                "-I",
+                "Core/Inc/motor_control",
+                // --- CO ANALIZUJEMY ---
+                // Zamiast skanować całe Core/Src, wskaż tylko swój main.c 
+                // i folder z Twoją logiką
+                "Core/Src/main.c",
+                "Core/Inc/motor_control"
+            ],
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        }
+    ]
+}

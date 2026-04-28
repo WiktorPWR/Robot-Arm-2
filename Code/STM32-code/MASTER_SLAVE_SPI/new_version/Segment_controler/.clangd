@@ -1,0 +1,11 @@
+CompileFlags:
+  Add:
+    - '-ferror-limit=0'
+    - '-Wno-implicit-int'
+    - '--query-driver=C:/Users/ostro/AppData/Local/stm32cube/**'
+  CompilationDatabase: build/Debug
+Index:
+  Background: Build
+Diagnostics:
+  Suppress:
+    - unused-includes
