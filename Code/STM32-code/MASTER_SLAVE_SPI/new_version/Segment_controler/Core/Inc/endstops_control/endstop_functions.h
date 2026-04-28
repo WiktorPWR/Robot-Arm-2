@@ -1,0 +1,5 @@
+#ifndef ENDSTOP_FUNCTIONS_H
+#define ENDSTOP_FUNCTIONS_H
+
+
+#endif /* ENDSTOP_FUNCTIONS_H */

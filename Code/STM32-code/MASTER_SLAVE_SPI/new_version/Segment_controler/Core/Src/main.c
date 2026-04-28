@@ -271,6 +271,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(EN_PIN_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : ENDSTOP_PIN_Pin */
+  GPIO_InitStruct.Pin = ENDSTOP_PIN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(ENDSTOP_PIN_GPIO_Port, &GPIO_InitStruct);
+
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
   /* USER CODE END MX_GPIO_Init_2 */

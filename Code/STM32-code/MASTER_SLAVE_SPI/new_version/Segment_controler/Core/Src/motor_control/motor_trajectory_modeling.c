@@ -1,6 +1,13 @@
 #include "motor_trajectory_modeling.h"
 #include "motor_setup_functions.h"
 
+
+//TO DO:
+// Change becosu is not convinet to attach new file to this document
+#include "Trajectories/trapezoidal.h"
+#include "Trajectories/s_cuvre.h"
+
+
 typedef enum{
     NO_TRAJECTORY_SET,
     TRAPEZOIDAL,
@@ -126,53 +133,34 @@ static Motor_Movement_Variables motor_movement_variables = {
 
 //Here we add new possible movemet functions, we can add as many as we want, but for now we will implement only trapezoidal and s-curve trajectory
 
-static void move_trapezoidal(float target_position);
-
-static void move_s_curve(float target_position);
-
-static void move_via_angle(float target_position){
+static void move_via_angle(struct MOTOR *self, float target_position){
     switch(trajectory_params.trajectory_type){
         case TRAPEZOIDAL:
-            move_trapezoidal(target_position);
+            move_trapezoidal(self,target_position);
             break;
         case S_CURVE:
-            move_s_curve(target_position);
+            move_s_curve(self, target_position);
             break;
         default:
+            //this is error case
             motor_state_setter(MOTOR_ERROR);
-            // Handle error case, maybe set motor state to error
             break;
     }
 }
 
-typedef struct{
+typedef struct MOTOR{
     const Trajectory_Parameter_Control *trajectory_parameter_control;
     Motor_Movement_Variables *motor_movement_variables;
-    void (*move_via_angle)(float target_position);
+    void (*move_via_angle)(MOTOR *self,float target_position);
 }MOTOR;
 
 MOTOR motor = {
     .trajectory_parameter_control = &trajectory_parameter_control,
     .motor_movement_variables = &motor_movement_variables,
-    .move_via_angle = move_via_angle
+    .move_via_angle = move_via_angle,
 }
 
 
-
-// TO DO:
-// - Implement move_trapezoidal function
-// - Implement move_s_curve function
-
-
-static void move_trapezoidal(float target_position){
-    // Implement trapezoidal trajectory movement logic here
-    // This function should update motor_movement_variables based on the target_position and trajectory parameters
-}
-
-static void move_s_curve(float target_position){
-    // Implement s-curve trajectory movement logic here
-    // This function should update motor_movement_variables based on the target_position and trajectory parameters
-}
 
 
 

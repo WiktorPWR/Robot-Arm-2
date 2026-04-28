@@ -73,6 +73,8 @@ void Error_Handler(void);
 #define DIR_PIN_GPIO_Port GPIOA
 #define EN_PIN_Pin GPIO_PIN_4
 #define EN_PIN_GPIO_Port GPIOC
+#define ENDSTOP_PIN_Pin GPIO_PIN_5
+#define ENDSTOP_PIN_GPIO_Port GPIOC
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
